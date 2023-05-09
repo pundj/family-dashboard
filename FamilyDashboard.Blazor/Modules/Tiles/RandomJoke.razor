@@ -1,0 +1,42 @@
+@inject IRandomJokeService RandomJokeService
+@using FamilyDashboard.Blazor.Models
+
+@if (_setup == null)
+{
+    <p>Loading a random joke...</p>
+}
+else
+{
+    <h4 class="text-dark">@_setup</h4>
+    <h5 class="text-success-emphasis">@_punchLine</h5>
+}
+
+@code {
+    private string? _setup;
+    private string? _punchLine;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            await FetchJokeTextAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
+
+        await base.OnInitializedAsync();
+    }
+
+    async Task FetchJokeTextAsync()
+    {
+        _setup = null;
+        var getRandomJokeResponse = await RandomJokeService.GetJokeAsync();
+        if (getRandomJokeResponse == null)
+        {
+            _setup = "";
+            return;
+        }
+        _setup = getRandomJokeResponse.Setup;
+        _punchLine = getRandomJokeResponse.Punchline;
+    }
+}

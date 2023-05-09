@@ -17,4 +17,11 @@
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
 
+  <Target Name="PreBuildDebug" BeforeTargets="PreBuildEvent" Condition=" '$(Configuration)' == 'Debug'">
+  	<Exec Command="npm run build" />
+  </Target>
+  <Target Name="PreBuildDebug" BeforeTargets="PreBuildEvent" Condition=" '$(Configuration)' == 'Release'">
+  	<Exec Command="npm run production" />
+  </Target>
+
 </Project>

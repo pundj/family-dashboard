@@ -6,11 +6,12 @@
     <title>Family Dashboard</title>
     <base href="/" />
     <link rel="icon" type="image/png" href="icon-512.png" />
-    <link href="css/app.css" rel="stylesheet" />
     <link href="manifest.json" rel="manifest" />
     
-    <!-- If you add any scoped CSS files, uncomment the following to load them
-    <link href="FamilyDashboard.Blazor.styles.css" rel="stylesheet" /> -->
+    <link href="dist/css/site.css" rel="stylesheet" />
+    <script defer src="dist/js/index.js"></script>
+    <script src="https://kit.fontawesome.com/0fec51e666.js" crossorigin="anonymous"></script>
+    <!--<link href="FamilyDashboard.Blazor.styles.css" rel="stylesheet" />-->
 </head>
 
 <body>
@@ -19,7 +20,8 @@
             <circle r="40%" cx="50%" cy="50%" />
             <circle r="40%" cx="50%" cy="50%" />
         </svg>
-        <!-- <div class="linear-progress"></div> -->
+        <!-- If you want to have a linear loading bar instead of the circle, uncomment line below and comment loading-progress element above 
+            <div class="linear-progress"></div> -->
         <div class="loading-progress-text"></div>
     </div>
     

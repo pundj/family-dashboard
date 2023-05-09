@@ -1,1 +1,7 @@
-<h1>Welcome to Family Dashboard!</h1>
+<h1>Welcome to @FamilyName Family Dashboard!</h1>
+
+@code {
+    [Parameter]
+    [EditorRequired]
+    public string? FamilyName { get; set; }
+}

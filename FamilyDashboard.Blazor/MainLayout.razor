@@ -1,5 +1,24 @@
 ﻿@inherits LayoutComponentBase
+@inject IConfiguration Configuration
 
+<PageTitle>@_familyName Family Dashboard</PageTitle>
 <main>
-    @Body
+    <header class="d-flex justify-content-center sticky-top mb-2 p-3 border border-success">
+        <DashboardTitle FamilyName="@_familyName" />
+    </header>
+    <article class="content p-4 border border-success">
+        @Body
+    </article>
+    <footer class="d-flex justify-content-center sticky-bottom mt-2 p-3 border border-success">
+        <DashboardFooter FamilyName="@_familyName" />
+    </footer>
 </main>
+
+@code {
+    private string? _familyName;
+    protected override void OnInitialized()
+    {
+        _familyName = Configuration["FamilyName"];
+        base.OnInitialized();
+    }
+}

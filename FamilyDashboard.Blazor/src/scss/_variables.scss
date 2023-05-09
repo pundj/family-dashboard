@@ -1,0 +1,17 @@
+$blue: #003468 !default;
+$green: #387c2b !default;
+$yellow: #eba900 !default;
+$gray: #adafb2 !default;
+$red: #f32735 !default;
+$beige: #b6a999 !default;
+$maroon: #d65d72 !default;
+$purple: #6610f2 !default;
+
+$primary: $blue;
+$succes: $green;
+$warning: $yellow;
+$danger: $red;
+$tertiary: $gray;
+$info: $beige;
+
+$my-colors: ( "blue": $blue, "green": $green, "yellow": $yellow, "beige": $beige, "purple": $purple, "maroon": $maroon);

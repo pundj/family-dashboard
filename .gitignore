@@ -15,6 +15,7 @@ _site/
 !.vscode/extensions.json
 !.vscode/settings.json
 *.userprefs
+appsettings.Development.json
 
 # Build results
 [Dd]ebug/
@@ -195,3 +196,8 @@ __pycache__/
 
 # Windows thumbnail cache files
 Thumbs.db
+
+
+# Blazor
+/FamilyDashboard.Blazor/wwwroot/dist/
+/FamilyDashboard.Blazor/wwwroot/dist/js/index.js

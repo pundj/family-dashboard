@@ -1,44 +1,8 @@
-@inject IRandomJokeService RandomJokeService
-@using FamilyDashboard.Blazor.Models
-
-<h3>Joke of the day</h3>
-@if (_setup == null)
-{
-    <h5>Loading joke...</h5>
-}
-else
-{
-    <h5>@_setup</h5>
-    <h5>@_punchLine</h5>
-    <button @onclick="async () => await SetFooterTextAsync()">Get new joke</button>
-}
+﻿
+<p>@FamilyName Family Dashboard &copy; @DateTime.Today.Year</p>
 
 @code {
-    private string? _setup;
-    private string? _punchLine;
-    private Timer? _timer;
-
-    protected override async Task OnInitializedAsync()
-    {
-        _timer = new System.Threading.Timer(async _ =>
-        {
-            await SetFooterTextAsync();        
-            await InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.Zero, TimeSpan.FromDays(1));
-
-        await base.OnInitializedAsync();
-    }
-
-    async Task SetFooterTextAsync()
-    {
-        _setup = null;
-        var getRandomJokeResponse = await RandomJokeService.GetJokeAsync();
-        if (getRandomJokeResponse == null)
-        {
-            _setup = "";
-            return;
-        }
-        _setup = getRandomJokeResponse.Setup;
-        _punchLine = getRandomJokeResponse.Punchline;
-    }
+    [Parameter]
+    [EditorRequired]
+    public string? FamilyName { get; set; }
 }

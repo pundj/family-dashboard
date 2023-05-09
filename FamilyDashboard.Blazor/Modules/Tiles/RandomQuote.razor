@@ -1,0 +1,48 @@
+@inject IRandomQuoteService RandomQuoteService
+@using FamilyDashboard.Blazor.Models
+
+@if (_content == null)
+{
+    <p>Loading a random quote...</p>
+}
+else
+{
+    <figure>
+      <blockquote class="blockquote">
+        <p>@_content</p>
+      </blockquote>
+      <figcaption class="blockquote-footer">
+        @_author
+      </figcaption>
+    </figure>
+}
+
+@code {
+    private string? _content;
+    private string? _author;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            await FetchQuoteTextAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
+
+        await base.OnInitializedAsync();
+    }
+
+    async Task FetchQuoteTextAsync()
+    {
+        _content = null;
+        var getRandomQuoteResponse = await RandomQuoteService.GetQuoteAsync();
+        if (getRandomQuoteResponse == null)
+        {
+            _content = "";
+            return;
+        }
+        _content = getRandomQuoteResponse.Content;
+        _author = getRandomQuoteResponse.Author;
+    }
+}
