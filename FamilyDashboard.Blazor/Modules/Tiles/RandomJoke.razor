@@ -1,17 +1,24 @@
 @inject IRandomJokeService RandomJokeService
 @using FamilyDashboard.Blazor.Models
 
-@if (_setup == null)
+@if (_errorMessage != null)
+{
+    <p class="m-0">@_errorMessage</p>
+}
+else if (_setup == null)
 {
     <p>Loading a random joke...</p>
 }
 else
 {
-    <h5 class="text-dark">@_setup</h5>
-    <h6 class="text-secondary-emphasis">@_punchLine</h6>
+    <div @onclick="async () => await FetchJokeTextAsync()">
+        <h5 class="text-dark">@_setup</h5>
+        <h6 class="text-secondary-emphasis">@_punchLine</h6>
+    </div>
 }
 
 @code {
+    private string? _errorMessage;
     private string? _setup;
     private string? _punchLine;
     private Timer? _timer;
@@ -29,14 +36,21 @@ else
 
     async Task FetchJokeTextAsync()
     {
-        _setup = null;
-        var getRandomJokeResponse = await RandomJokeService.GetJokeAsync();
-        if (getRandomJokeResponse == null)
+        try
         {
-            _setup = "";
-            return;
+            _setup = null;
+            var getRandomJokeResponse = await RandomJokeService.GetJokeAsync();
+            if (getRandomJokeResponse == null)
+            {
+                _setup = "";
+                return;
+            }
+            _setup = getRandomJokeResponse.Setup;
+            _punchLine = getRandomJokeResponse.Punchline;
         }
-        _setup = getRandomJokeResponse.Setup;
-        _punchLine = getRandomJokeResponse.Punchline;
+        catch
+        {
+            _errorMessage = "Unable to retrieve a joke.";
+        }
     }
 }
