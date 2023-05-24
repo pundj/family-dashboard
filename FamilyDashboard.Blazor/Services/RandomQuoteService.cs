@@ -2,7 +2,6 @@
 using System.Net.Http.Json;
 
 namespace FamilyDashboard.Blazor.Services;
-
 public class RandomQuoteService : IRandomQuoteService
 {
     private readonly HttpClient _httpClient;

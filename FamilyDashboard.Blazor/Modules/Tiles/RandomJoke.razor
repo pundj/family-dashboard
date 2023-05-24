@@ -11,10 +11,14 @@ else if (_setup == null)
 }
 else
 {
-    <div @onclick="async () => await FetchJokeTextAsync()">
-        <h5 class="text-dark">@_setup</h5>
-        <h6 class="text-secondary-emphasis">@_punchLine</h6>
-    </div>
+    <figure @onclick="async () => await FetchJokeTextAsync()">
+        <blockquote class="blockquote">
+            <p>@_setup</p>
+        </blockquote>
+        <figcaption class="blockquote-footer">
+            @_punchLine
+        </figcaption>
+    </figure>
 }
 
 @code {

@@ -11,5 +11,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IRandomJokeService, RandomJokeService>();
 builder.Services.AddScoped<IRandomQuoteService, RandomQuoteService>();
+builder.Services.AddScoped<IWeatherForecastService, WeatherForecastService>();
 
 await builder.Build().RunAsync();

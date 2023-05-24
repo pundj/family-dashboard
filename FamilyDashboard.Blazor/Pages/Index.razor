@@ -1,10 +1,22 @@
 ﻿@page "/"
+@inject IConfiguration Configuration
 
 <div class="row">
-    <div class="col p-3 border border-primary">
+    <div class="col p-3">
         <RandomJoke />
     </div>
-    <div class="col p-3 border border-primary">
+    <div class="col p-3">
         <RandomQuote />
     </div>
+</div>
+<div class="row">
+    <div class="col p-3">
+        <WeatherForecast />
+    </div>
+    @if (Configuration!= null && Configuration.GetValue<string>("GoogleCalendarEmbedCode") != null)
+    {
+        <div class="col p-3">
+            @((MarkupString)Configuration.GetValue<string>("GoogleCalendarEmbedCode")!)
+        </div>
+    }
 </div>

@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 
 namespace FamilyDashboard.Blazor.Services;
+
 public class RandomJokeService : IRandomJokeService
 {
     private readonly HttpClient _httpClient;

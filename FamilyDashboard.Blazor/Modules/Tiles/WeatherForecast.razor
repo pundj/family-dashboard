@@ -1,0 +1,48 @@
+@inject IWeatherForecastService WeatherForecastService
+@using FamilyDashboard.Blazor.Models
+
+@if (_errorMessage != null)
+{
+    <p class="m-0">@_errorMessage</p>
+}
+else if (_weatherForecastImage == null)
+{
+    <p>Loading weather forecast...</p>
+}
+else
+{
+    <img src="@_weatherForecastImage" alt="Weather Forecast for Locale" />
+}
+
+@code {
+    private string? _errorMessage;
+    private string? _weatherForecastImage;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            await FetchQuoteTextAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
+
+        await base.OnInitializedAsync();
+    }
+
+    async Task FetchQuoteTextAsync()
+    {
+        try
+        {
+            var base64String = await WeatherForecastService.GetWeatherForecastBase64ImageStringAsync();
+            if (base64String == null)
+                throw new Exception();
+            _weatherForecastImage = $"data:image/png;base64,{base64String}";
+            StateHasChanged();
+        }
+        catch
+        {
+            _errorMessage = "Unable to retrieve a quote.";
+        }
+    }
+}
