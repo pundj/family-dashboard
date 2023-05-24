@@ -11,7 +11,7 @@ else if (_weatherForecastImage == null)
 }
 else
 {
-    <img src="@_weatherForecastImage" alt="Weather Forecast for Locale" />
+    <img src="@_weatherForecastImage" alt="Weather Forecast for Locale" @onclick="@(async (e) => await FetchWeatherReportAsync())" />
 }
 
 @code {
@@ -23,15 +23,16 @@ else
     {
         _timer = new System.Threading.Timer(async _ =>
         {
-            await FetchQuoteTextAsync();
+            await FetchWeatherReportAsync();
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
 
         await base.OnInitializedAsync();
     }
 
-    async Task FetchQuoteTextAsync()
+    async Task FetchWeatherReportAsync()
     {
+        _weatherForecastImage = null;
         try
         {
             var base64String = await WeatherForecastService.GetWeatherForecastBase64ImageStringAsync();
