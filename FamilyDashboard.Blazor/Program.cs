@@ -12,5 +12,6 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IRandomJokeService, RandomJokeService>();
 builder.Services.AddScoped<IRandomQuoteService, RandomQuoteService>();
 builder.Services.AddScoped<IWeatherForecastService, WeatherForecastService>();
+builder.Services.AddScoped<ISmartHomeService, SmartThingsService>();
 
 await builder.Build().RunAsync();

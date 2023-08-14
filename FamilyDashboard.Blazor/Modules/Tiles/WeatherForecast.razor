@@ -1,6 +1,7 @@
 @inject IWeatherForecastService WeatherForecastService
 @using FamilyDashboard.Blazor.Models
 
+<h3 @onclick="async () => await FetchWeatherReportAsync()">Weather</h3>
 @if (_errorMessage != null)
 {
     <p class="m-0">@_errorMessage</p>
@@ -43,7 +44,7 @@ else
         }
         catch
         {
-            _errorMessage = "Unable to retrieve a quote.";
+            _errorMessage = "Unable to retrieve a weather forecast.";
         }
     }
 }

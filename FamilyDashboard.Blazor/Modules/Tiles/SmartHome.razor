@@ -1,0 +1,58 @@
+@using FamilyDashboard.Blazor.Models.SmartHome;
+@inject ISmartHomeService SmartHomeService
+
+<h3 @onclick="async () => await FetchDevicesAsync()">Smart Home</h3>
+@if (_errorMessage != null)
+{
+    <p class="m-0 text-danger">@_errorMessage</p>
+}
+else if (_devices == null)
+{
+    <p>Loading smart home devices...</p>
+}
+else if (!_devices.Any())
+{
+    <p>No smart home devices to display.</p>
+}
+else
+{
+    <div class="d-flex flex-wrap justify-content-between">
+        @foreach (var device in _devices)
+        {
+            <SmartHomeTile Device="@device" />
+        }
+    </div>
+}
+
+@code {
+    private string? _errorMessage;
+    private IEnumerable<SmartThingsDeviceViewModel>? _devices;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            await FetchDevicesAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
+
+        await base.OnInitializedAsync();
+    }
+
+    async Task FetchDevicesAsync()
+    {
+        try
+        {
+            _devices = null;
+            var getDevicesResponse = await SmartHomeService.GetDevicesAsync();
+            if (getDevicesResponse == null)
+                return;
+            _devices = getDevicesResponse.Items;
+        }
+        catch
+        {
+            _errorMessage = "Unable to retrieve smart home devices.";
+        }
+    }
+}

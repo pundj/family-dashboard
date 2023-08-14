@@ -9,14 +9,57 @@
         <RandomQuote />
     </div>
 </div>
-<div class="row">
-    <div class="col p-3">
-        <WeatherForecast />
-    </div>
-    @if (Configuration!= null && Configuration.GetValue<string>("GoogleCalendarEmbedCode") != null)
-    {
-        <div class="col p-3">
-            @((MarkupString)Configuration.GetValue<string>("GoogleCalendarEmbedCode")!)
+<div class="d-flex align-items-start">
+    <div class="col-1">
+        <div class="nav flex-column nav-pills me-3" role="tablist" aria-orientation="vertical">
+            @if (_showSmartThingsTab)
+            {
+                <button class="nav-link active" id="smarthome-tab" data-bs-toggle="pill" data-bs-target="#smarthome-tab-pane" type="button" role="tab" aria-controls="smarthome-tab-pane" aria-selected="false">Smart Home</button>
+            }
+            @if (_showWeatherTab)
+            {
+                <button class="nav-link" id="weather-tab" data-bs-toggle="pill" data-bs-target="#weather-tab-pane" type="button" role="tab" aria-controls="weather-tab-pane" aria-selected="true">Weather</button>
+            }
+            @if (_showCalendarTab)
+            {
+                <button class="nav-link" id="calendar-tab" data-bs-toggle="pill" data-bs-target="#calendar-tab-pane" type="button" role="tab" aria-controls="calendar-tab-pane" aria-selected="false">Calendar</button>
+            }
         </div>
-    }
+    </div>
+    <div class="col-11 tab-content ms-2">
+        @if (_showSmartThingsTab)
+        {
+            <div class="tab-pane fade show active" id="smarthome-tab-pane" role="tabpanel" aria-labelledby="smarthome-tab" tabindex="0">
+                <SmartHome />
+            </div>
+        }
+        @if (_showWeatherTab)
+        {
+            <div class="tab-pane fade" id="weather-tab-pane" role="tabpanel" aria-labelledby="weather-tab" tabindex="0">
+                <WeatherForecast />
+            </div>
+        }
+        @if (_showCalendarTab)
+        {
+            <div class="tab-pane fade" id="calendar-tab-pane" role="tabpanel" aria-labelledby="calendar-tab" tabindex="0">
+                <Calendar />
+            </div>
+        }
+    </div>
 </div>
+
+@code {
+    bool _showSmartThingsTab = false;
+    bool _showWeatherTab = false;
+    bool _showCalendarTab = false;
+
+    protected override void OnInitialized()
+    {
+        _showSmartThingsTab = Configuration != null && Configuration.GetValue<string>("SmartThingsApiBaseAddress") != null &&
+            Configuration.GetValue<string>("SmartThingsApiAccessToken") != null;
+        _showWeatherTab = Configuration != null && Configuration.GetValue<string>("Locale") != null;
+        _showCalendarTab = Configuration != null && Configuration.GetValue<string>("GoogleCalendarEmbedCode") != null;
+
+        base.OnInitialized();
+    }
+}

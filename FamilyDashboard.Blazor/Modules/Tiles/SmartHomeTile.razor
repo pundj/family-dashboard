@@ -1,0 +1,70 @@
+@inject ISmartHomeService SmartHomeService
+@using FamilyDashboard.Blazor.Models.SmartHome;
+
+@if (_errorMessage != null)
+{
+    <p class="m-0 text-danger">@_errorMessage</p>
+}
+
+
+<div class="border m-1 p-2 border-@Device.ColorClassName" style="min-width: 100px; min-height: 100px;">
+    <div class="d-flex flex-row fs-4">
+        <div class="me-auto">
+            <i class="fa fa-@Device.IconClassName"></i>
+        </div>
+        @if (Device.SwitchValue != SmartHomeSwitch.Unknown && Device.OnlineState != SmartHomeOnlineState.Offline)
+        {
+            <div>
+                <button class="btn btn-sm btn-secondary rounded-circle" @onclick="async () => await ToggleSwitchAsync()">
+                    <i class="fa fa-power-off" title="Toggle On/Off"></i>
+                </button>
+            </div>
+        }
+    </div>
+    <strong>@Device.Label</strong>
+    <div>
+        <small>@Device.Status</small>
+        @if (Device.OnlineState != SmartHomeOnlineState.Offline)
+        {
+            <small class="ms-1">@Device.TemperatureText</small>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public SmartThingsDeviceViewModel Device { get; set; } = default!;
+    private string? _errorMessage;
+    private Timer? _timer;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _timer = new System.Threading.Timer(async _ =>
+        {
+            await RefreshDeviceAsync();
+            await InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
+
+        await base.OnInitializedAsync();
+    }
+
+    async Task ToggleSwitchAsync()
+    {
+        try
+        {
+            if (Device == null) return;
+            var newValue = Device.SwitchValue == SmartHomeSwitch.On ? SmartHomeSwitch.Off : SmartHomeSwitch.On;
+            await SmartHomeService.SetSwitchAsync(Device.DeviceId, newValue);
+            Device.SwitchValue = newValue;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            _errorMessage = "Unable to toggle switch.";
+        }
+    }
+
+    async Task RefreshDeviceAsync()
+    {
+        Device = await SmartHomeService.GetDeviceAsync(Device.DeviceId) ?? Device;
+    }
+}

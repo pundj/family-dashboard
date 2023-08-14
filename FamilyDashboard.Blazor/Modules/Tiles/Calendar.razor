@@ -1,0 +1,4 @@
+﻿@inject IConfiguration Configuration
+
+<h3>Calendar</h3>
+@((MarkupString)Configuration.GetValue<string>("GoogleCalendarEmbedCode")!)
