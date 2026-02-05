@@ -1,0 +1,1228 @@
+{
+  "settings": {
+    "components": {
+      "code": false,
+      "binaries": false
+    },
+    "targetId": "net10.0",
+    "targetDisplayName": ".NETCoreApp,Version=v10.0"
+  },
+  "analysisStartTime": "2026-02-05T19:00:00.8456004Z",
+  "analysisEndTime": "2026-02-05T19:00:03.9996764Z",
+  "privacyModeHelpUrl": "https://go.microsoft.com/fwlink/?linkid=2270980",
+  "stats": {
+    "summary": {
+      "projects": 1,
+      "issues": 5,
+      "incidents": 41,
+      "effort": 41
+    },
+    "charts": {
+      "severity": {
+        "Mandatory": 10,
+        "Optional": 0,
+        "Potential": 31,
+        "Information": 0
+      },
+      "category": {
+        "NuGet": 3,
+        "Project": 1,
+        "Api": 37
+      }
+    }
+  },
+  "projects": [
+    {
+      "path": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+      "startingProject": true,
+      "issues": 5,
+      "storyPoints": 41,
+      "properties": {
+        "appName": "FamilyDashboard.Blazor",
+        "projectKind": "AspNetCore",
+        "frameworks": [
+          "net7.0"
+        ],
+        "languages": [
+          "C#"
+        ],
+        "tools": [
+          "MSBuild"
+        ],
+        "isSdkStyle": true,
+        "numberOfFiles": 46,
+        "numberOfCodeFiles": 23,
+        "linesTotal": 20499,
+        "linesOfCode": 656,
+        "totalApiScanned": 1661,
+        "minLinesOfCodeToChange": 37,
+        "maxLinesOfCodeToChange": 37
+      },
+      "ruleInstances": [
+        {
+          "incidentId": "ec13c5bb-ab4f-4fd8-94ce-fff664f8debb",
+          "ruleId": "NuGet.0002",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "Microsoft.AspNetCore.Components.WebAssembly, 7.0.5\n\nRecommendation:\n\nRemove Microsoft.AspNetCore.Components.WebAssembly, and replace with new package Microsoft.AspNetCore.Components.WebAssembly 10.0.2",
+              "protected": "Microsoft.AspNetCore.Components.WebAssembly, 7.0.5\n\nRecommendation:\n\nRemove Microsoft.AspNetCore.Components.WebAssembly, and replace with new package Microsoft.AspNetCore.Components.WebAssembly 10.0.2"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+            "snippet": "Microsoft.AspNetCore.Components.WebAssembly, 7.0.5\n\nRecommendation:\n\nRemove Microsoft.AspNetCore.Components.WebAssembly, and replace with new package Microsoft.AspNetCore.Components.WebAssembly 10.0.2",
+            "protectedSnippet": "Microsoft.AspNetCore.Components.WebAssembly, 7.0.5\n\nRecommendation:\n\nRemove Microsoft.AspNetCore.Components.WebAssembly, and replace with new package Microsoft.AspNetCore.Components.WebAssembly 10.0.2",
+            "label": "Microsoft.AspNetCore.Components.WebAssembly 7.0.5",
+            "properties": {
+              "PackageId": "Microsoft.AspNetCore.Components.WebAssembly",
+              "PackageVersion": "7.0.5",
+              "PackageNewVersion": "10.0.2",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "2b2f9ad5-1c37-4311-85f5-c8a8a19b1534",
+          "ruleId": "NuGet.0002",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "Microsoft.AspNetCore.Components.WebAssembly.DevServer, 7.0.5\n\nRecommendation:\n\nRemove Microsoft.AspNetCore.Components.WebAssembly.DevServer, and replace with new package Microsoft.AspNetCore.Components.WebAssembly.DevServer 10.0.2",
+              "protected": "Microsoft.AspNetCore.Components.WebAssembly.DevServer, 7.0.5\n\nRecommendation:\n\nRemove Microsoft.AspNetCore.Components.WebAssembly.DevServer, and replace with new package Microsoft.AspNetCore.Components.WebAssembly.DevServer 10.0.2"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+            "snippet": "Microsoft.AspNetCore.Components.WebAssembly.DevServer, 7.0.5\n\nRecommendation:\n\nRemove Microsoft.AspNetCore.Components.WebAssembly.DevServer, and replace with new package Microsoft.AspNetCore.Components.WebAssembly.DevServer 10.0.2",
+            "protectedSnippet": "Microsoft.AspNetCore.Components.WebAssembly.DevServer, 7.0.5\n\nRecommendation:\n\nRemove Microsoft.AspNetCore.Components.WebAssembly.DevServer, and replace with new package Microsoft.AspNetCore.Components.WebAssembly.DevServer 10.0.2",
+            "label": "Microsoft.AspNetCore.Components.WebAssembly.DevServer 7.0.5",
+            "properties": {
+              "PackageId": "Microsoft.AspNetCore.Components.WebAssembly.DevServer",
+              "PackageVersion": "7.0.5",
+              "PackageNewVersion": "10.0.2",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "e1917a04-9d5e-4a8a-b732-4e3b4d5c7330",
+          "ruleId": "NuGet.0002",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "Microsoft.Extensions.Http, 7.0.0\n\nRecommendation:\n\nRemove Microsoft.Extensions.Http, and replace with new package Microsoft.Extensions.Http 10.0.2",
+              "protected": "Microsoft.Extensions.Http, 7.0.0\n\nRecommendation:\n\nRemove Microsoft.Extensions.Http, and replace with new package Microsoft.Extensions.Http 10.0.2"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+            "snippet": "Microsoft.Extensions.Http, 7.0.0\n\nRecommendation:\n\nRemove Microsoft.Extensions.Http, and replace with new package Microsoft.Extensions.Http 10.0.2",
+            "protectedSnippet": "Microsoft.Extensions.Http, 7.0.0\n\nRecommendation:\n\nRemove Microsoft.Extensions.Http, and replace with new package Microsoft.Extensions.Http 10.0.2",
+            "label": "Microsoft.Extensions.Http 7.0.0",
+            "properties": {
+              "PackageId": "Microsoft.Extensions.Http",
+              "PackageVersion": "7.0.0",
+              "PackageNewVersion": "10.0.2",
+              "PackageReplacements": null
+            }
+          }
+        },
+        {
+          "incidentId": "bd873dda-e368-4e4c-b1de-7d10540df337",
+          "ruleId": "Project.0002",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "Current target framework: net7.0\nRecommended target framework: net10.0",
+              "protected": "Current target framework: net7.0\nRecommended target framework: net10.0"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+            "snippet": "Current target framework: net7.0\nRecommended target framework: net10.0",
+            "protectedSnippet": "Current target framework: net7.0\nRecommended target framework: net10.0",
+            "properties": {
+              "CurrentTargetFramework": "net7.0",
+              "RecommendedTargetFramework": "net10.0"
+            }
+          }
+        },
+        {
+          "incidentId": "259861d2-23a0-4657-bd92-a66e132c6201",
+          "ruleId": "Api.0001",
+          "description": "Breaking change: DynamicallyAccessedMembers annotation removed from trim-unsafe configuration APIs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_showCalendarTab = Configuration != null \u0026\u0026 Configuration.GetValue\u003Cstring\u003E(\u0022GoogleCalendarEmbedCode\u0022) != null;",
+              "protected": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Pages\\Index.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "_showCalendarTab = Configuration != null \u0026\u0026 Configuration.GetValue\u003Cstring\u003E(\u0022GoogleCalendarEmbedCode\u0022) != null;",
+            "protectedSnippet": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "label": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/extensions/10.0/dynamically-accessed-members-configuration.md",
+                "isCustom": false
+              }
+            ],
+            "line": 314,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "b6f1f42a-7481-4170-bb36-02d949b99079",
+          "ruleId": "Api.0001",
+          "description": "Breaking change: DynamicallyAccessedMembers annotation removed from trim-unsafe configuration APIs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_showWeatherTab = Configuration != null \u0026\u0026 Configuration.GetValue\u003Cstring\u003E(\u0022Locale\u0022) != null;",
+              "protected": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Pages\\Index.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "_showWeatherTab = Configuration != null \u0026\u0026 Configuration.GetValue\u003Cstring\u003E(\u0022Locale\u0022) != null;",
+            "protectedSnippet": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "label": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/extensions/10.0/dynamically-accessed-members-configuration.md",
+                "isCustom": false
+              }
+            ],
+            "line": 313,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "594577bd-357e-448b-8d5a-67ad4a58326b",
+          "ruleId": "Api.0001",
+          "description": "Breaking change: DynamicallyAccessedMembers annotation removed from trim-unsafe configuration APIs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_showSmartThingsTab = Configuration != null \u0026\u0026 Configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiBaseAddress\u0022) != null \u0026\u0026\r\n            Configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiAccessToken\u0022) != null;",
+              "protected": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Pages\\Index.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "_showSmartThingsTab = Configuration != null \u0026\u0026 Configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiBaseAddress\u0022) != null \u0026\u0026\r\n            Configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiAccessToken\u0022) != null;",
+            "protectedSnippet": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "label": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/extensions/10.0/dynamically-accessed-members-configuration.md",
+                "isCustom": false
+              }
+            ],
+            "line": 311,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "32b4df2e-f7bc-414a-af81-522c4ee7d0bf",
+          "ruleId": "Api.0001",
+          "description": "Breaking change: DynamicallyAccessedMembers annotation removed from trim-unsafe configuration APIs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_showSmartThingsTab = Configuration != null \u0026\u0026 Configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiBaseAddress\u0022) != null \u0026\u0026\r\n            Configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiAccessToken\u0022) != null;",
+              "protected": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Pages\\Index.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "_showSmartThingsTab = Configuration != null \u0026\u0026 Configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiBaseAddress\u0022) != null \u0026\u0026\r\n            Configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiAccessToken\u0022) != null;",
+            "protectedSnippet": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "label": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/extensions/10.0/dynamically-accessed-members-configuration.md",
+                "isCustom": false
+              }
+            ],
+            "line": 311,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "08bda4dd-171c-439e-ae33-ffc159a271af",
+          "ruleId": "Api.0002",
+          "description": "Breaking change: New TimeSpan.From*() overloads that take integers ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await FetchDevicesAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));",
+              "protected": "M:System.TimeSpan.FromHours(System.Double)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Modules\\Tiles\\SmartHome.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await FetchDevicesAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));",
+            "protectedSnippet": "M:System.TimeSpan.FromHours(System.Double)",
+            "label": "M:System.TimeSpan.FromHours(System.Double)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/core-libraries/9.0/timespan-from-overloads.md",
+                "isCustom": false
+              }
+            ],
+            "line": 215,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "33f181b8-b2c0-4059-a0e3-7948dadcfef7",
+          "ruleId": "Api.0002",
+          "description": "Breaking change: New TimeSpan.From*() overloads that take integers ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await FetchJokeTextAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));",
+              "protected": "M:System.TimeSpan.FromHours(System.Double)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Modules\\Tiles\\RandomJoke.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await FetchJokeTextAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));",
+            "protectedSnippet": "M:System.TimeSpan.FromHours(System.Double)",
+            "label": "M:System.TimeSpan.FromHours(System.Double)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/core-libraries/9.0/timespan-from-overloads.md",
+                "isCustom": false
+              }
+            ],
+            "line": 183,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "bcd90a42-9f8a-4617-9292-5b6d21c64e36",
+          "ruleId": "Api.0002",
+          "description": "Breaking change: New TimeSpan.From*() overloads that take integers ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await FetchQuoteTextAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));",
+              "protected": "M:System.TimeSpan.FromHours(System.Double)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Modules\\Tiles\\RandomQuote.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await FetchQuoteTextAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));",
+            "protectedSnippet": "M:System.TimeSpan.FromHours(System.Double)",
+            "label": "M:System.TimeSpan.FromHours(System.Double)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/core-libraries/9.0/timespan-from-overloads.md",
+                "isCustom": false
+              }
+            ],
+            "line": 183,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "a9a3c8a1-2d07-4cdc-a70b-20f249e17388",
+          "ruleId": "Api.0002",
+          "description": "Breaking change: New TimeSpan.From*() overloads that take integers ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await FetchWeatherReportAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));",
+              "protected": "M:System.TimeSpan.FromHours(System.Double)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Modules\\Tiles\\WeatherForecast.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await FetchWeatherReportAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));",
+            "protectedSnippet": "M:System.TimeSpan.FromHours(System.Double)",
+            "label": "M:System.TimeSpan.FromHours(System.Double)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/core-libraries/9.0/timespan-from-overloads.md",
+                "isCustom": false
+              }
+            ],
+            "line": 179,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "566be410-d6b5-463c-bc16-c6713258702f",
+          "ruleId": "Api.0001",
+          "description": "Breaking change: DynamicallyAccessedMembers annotation removed from trim-unsafe configuration APIs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "__builder.AddContent(1, (MarkupString)Configuration.GetValue\u003Cstring\u003E(\u0022GoogleCalendarEmbedCode\u0022)!\r\n\r\n#line default\r\n#line hidden\r\n#nullable disable\r\n            );",
+              "protected": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Modules\\Tiles\\Calendar.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "__builder.AddContent(1, (MarkupString)Configuration.GetValue\u003Cstring\u003E(\u0022GoogleCalendarEmbedCode\u0022)!\r\n\r\n#line default\r\n#line hidden\r\n#nullable disable\r\n            );",
+            "protectedSnippet": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "label": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/extensions/10.0/dynamically-accessed-members-configuration.md",
+                "isCustom": false
+              }
+            ],
+            "line": 83,
+            "column": 0
+          }
+        },
+        {
+          "incidentId": "b8744099-d60c-4c05-9572-b5a1f6488385",
+          "ruleId": "Api.0002",
+          "description": "Breaking change: New TimeSpan.From*() overloads that take integers ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await RefreshDeviceAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));",
+              "protected": "M:System.TimeSpan.FromMinutes(System.Double)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Modules\\Tiles\\SmartHomeTile.razor.Qivx-zWVKl-H3Cpt.ide.g.cs",
+            "snippet": "_timer = new System.Threading.Timer(async _ =\u003E\r\n        {\r\n            await RefreshDeviceAsync();\r\n            await InvokeAsync(StateHasChanged);\r\n        }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));",
+            "protectedSnippet": "M:System.TimeSpan.FromMinutes(System.Double)",
+            "label": "M:System.TimeSpan.FromMinutes(System.Double)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/core-libraries/9.0/timespan-from-overloads.md",
+                "isCustom": false
+              }
+            ],
+            "line": 253,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "4271ef67-ad90-44c9-8d79-7f987d9eed58",
+          "ruleId": "Api.0003",
+          "description": "Nullable JsonDocument properties deserialize to JsonValueKind.Null ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "using var doc = JsonDocument.Parse(json);",
+              "protected": "T:System.Text.Json.JsonDocument"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "using var doc = JsonDocument.Parse(json);",
+            "protectedSnippet": "T:System.Text.Json.JsonDocument",
+            "label": "T:System.Text.Json.JsonDocument",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/serialization/9.0/jsondocument-props.md",
+                "isCustom": false
+              }
+            ],
+            "line": 319,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "eca463db-4faa-458d-9a0a-034b0e63401c",
+          "ruleId": "Api.0003",
+          "description": "Nullable JsonDocument properties deserialize to JsonValueKind.Null ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "using var doc = JsonDocument.Parse(json);",
+              "protected": "T:System.Text.Json.JsonDocument"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "using var doc = JsonDocument.Parse(json);",
+            "protectedSnippet": "T:System.Text.Json.JsonDocument",
+            "label": "T:System.Text.Json.JsonDocument",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/serialization/9.0/jsondocument-props.md",
+                "isCustom": false
+              }
+            ],
+            "line": 319,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "24d25584-67df-47fe-9413-9bb51ce5a10b",
+          "ruleId": "Api.0003",
+          "description": "Nullable JsonDocument properties deserialize to JsonValueKind.Null ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "using var doc = JsonDocument.Parse(json);",
+              "protected": "T:System.Text.Json.JsonDocument"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "using var doc = JsonDocument.Parse(json);",
+            "protectedSnippet": "T:System.Text.Json.JsonDocument",
+            "label": "T:System.Text.Json.JsonDocument",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/serialization/9.0/jsondocument-props.md",
+                "isCustom": false
+              }
+            ],
+            "line": 151,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "cd2fe8b2-0667-4736-bf2f-d3a8af57a2e4",
+          "ruleId": "Api.0003",
+          "description": "Nullable JsonDocument properties deserialize to JsonValueKind.Null ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "using var doc = JsonDocument.Parse(json);",
+              "protected": "T:System.Text.Json.JsonDocument"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "using var doc = JsonDocument.Parse(json);",
+            "protectedSnippet": "T:System.Text.Json.JsonDocument",
+            "label": "T:System.Text.Json.JsonDocument",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/serialization/9.0/jsondocument-props.md",
+                "isCustom": false
+              }
+            ],
+            "line": 151,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "d5f649ee-676b-4470-b1e1-9f67442be383",
+          "ruleId": "Api.0003",
+          "description": "Nullable JsonDocument properties deserialize to JsonValueKind.Null ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "using var doc = JsonDocument.Parse(json);",
+              "protected": "T:System.Text.Json.JsonDocument"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "using var doc = JsonDocument.Parse(json);",
+            "protectedSnippet": "T:System.Text.Json.JsonDocument",
+            "label": "T:System.Text.Json.JsonDocument",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/serialization/9.0/jsondocument-props.md",
+                "isCustom": false
+              }
+            ],
+            "line": 108,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "9c28e64c-6215-4bf4-a65c-2642ebfbc3bf",
+          "ruleId": "Api.0003",
+          "description": "Nullable JsonDocument properties deserialize to JsonValueKind.Null ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "using var doc = JsonDocument.Parse(json);",
+              "protected": "T:System.Text.Json.JsonDocument"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "using var doc = JsonDocument.Parse(json);",
+            "protectedSnippet": "T:System.Text.Json.JsonDocument",
+            "label": "T:System.Text.Json.JsonDocument",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/serialization/9.0/jsondocument-props.md",
+                "isCustom": false
+              }
+            ],
+            "line": 108,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "6ccf5375-862b-48d5-8517-6aaa610585bc",
+          "ruleId": "Api.0003",
+          "description": "Breaking change - Streaming HTTP responses enabled by default in browser HTTP clients ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);",
+              "protected": "T:System.Net.Http.HttpContent"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);",
+            "protectedSnippet": "T:System.Net.Http.HttpContent",
+            "label": "T:System.Net.Http.HttpContent",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/default-http-streaming.md",
+                "isCustom": false
+              }
+            ],
+            "line": 94,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "016c2a2a-8416-4516-bc17-eca56a34433a",
+          "ruleId": "Api.0003",
+          "description": "Breaking change - Streaming HTTP responses enabled by default in browser HTTP clients ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+              "protected": "T:System.Net.Http.HttpContent"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+            "protectedSnippet": "T:System.Net.Http.HttpContent",
+            "label": "T:System.Net.Http.HttpContent",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/default-http-streaming.md",
+                "isCustom": false
+              }
+            ],
+            "line": 69,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "723a874a-34f4-454b-8c70-a4d900d62044",
+          "ruleId": "Api.0003",
+          "description": "Breaking change - Streaming HTTP responses enabled by default in browser HTTP clients ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+              "protected": "T:System.Net.Http.HttpContent"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+            "protectedSnippet": "T:System.Net.Http.HttpContent",
+            "label": "T:System.Net.Http.HttpContent",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/default-http-streaming.md",
+                "isCustom": false
+              }
+            ],
+            "line": 64,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "a6303a9a-d6be-4ad1-b6cc-d577909becb2",
+          "ruleId": "Api.0003",
+          "description": "Breaking change - Streaming HTTP responses enabled by default in browser HTTP clients ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "var responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+              "protected": "T:System.Net.Http.HttpContent"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "var responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+            "protectedSnippet": "T:System.Net.Http.HttpContent",
+            "label": "T:System.Net.Http.HttpContent",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/default-http-streaming.md",
+                "isCustom": false
+              }
+            ],
+            "line": 59,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "6b0a47b5-4abc-4234-bbad-126bc5179883",
+          "ruleId": "Api.0003",
+          "description": "Breaking change - Streaming HTTP responses enabled by default in browser HTTP clients ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+              "protected": "T:System.Net.Http.HttpContent"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+            "protectedSnippet": "T:System.Net.Http.HttpContent",
+            "label": "T:System.Net.Http.HttpContent",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/default-http-streaming.md",
+                "isCustom": false
+              }
+            ],
+            "line": 39,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "7a4c4e1d-9f44-4f2a-8544-579c19159163",
+          "ruleId": "Api.0003",
+          "description": "Breaking change - Streaming HTTP responses enabled by default in browser HTTP clients ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+              "protected": "T:System.Net.Http.HttpContent"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+            "protectedSnippet": "T:System.Net.Http.HttpContent",
+            "label": "T:System.Net.Http.HttpContent",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/default-http-streaming.md",
+                "isCustom": false
+              }
+            ],
+            "line": 35,
+            "column": 16
+          }
+        },
+        {
+          "incidentId": "a8b02442-2ab3-41dc-ac1c-f41d82da91df",
+          "ruleId": "Api.0003",
+          "description": "Breaking change - Streaming HTTP responses enabled by default in browser HTTP clients ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "var responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+              "protected": "T:System.Net.Http.HttpContent"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "var responseBody = await httpResponse.Content.ReadAsStringAsync().ConfigureAwait(false);",
+            "protectedSnippet": "T:System.Net.Http.HttpContent",
+            "label": "T:System.Net.Http.HttpContent",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/default-http-streaming.md",
+                "isCustom": false
+              }
+            ],
+            "line": 25,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "340de682-4511-48e1-96d1-ebec8714b366",
+          "ruleId": "Api.0001",
+          "description": "Breaking change: DynamicallyAccessedMembers annotation removed from trim-unsafe configuration APIs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "var accessToken = configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiAccessToken\u0022) ?? throw new Exception(\u0022SmartThingsApiAccessToken app setting is null. Please set the value in the appsettings.json\u0022);",
+              "protected": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "var accessToken = configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiAccessToken\u0022) ?? throw new Exception(\u0022SmartThingsApiAccessToken app setting is null. Please set the value in the appsettings.json\u0022);",
+            "protectedSnippet": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "label": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/extensions/10.0/dynamically-accessed-members-configuration.md",
+                "isCustom": false
+              }
+            ],
+            "line": 16,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "f62793e9-14a8-4e70-b62c-54241408ecb6",
+          "ruleId": "Api.0003",
+          "description": "Breaking change: URI length limits removed ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_httpClient.BaseAddress = new Uri(baseAddress);",
+              "protected": "T:System.Uri"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "_httpClient.BaseAddress = new Uri(baseAddress);",
+            "protectedSnippet": "T:System.Uri",
+            "label": "T:System.Uri",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/uri-length-limits-removed.md",
+                "isCustom": false
+              }
+            ],
+            "line": 15,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "c950e154-6b06-4808-b73d-3d5307f2b093",
+          "ruleId": "Api.0003",
+          "description": "Breaking change: URI length limits removed ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_httpClient.BaseAddress = new Uri(baseAddress);",
+              "protected": "M:System.Uri.#ctor(System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "_httpClient.BaseAddress = new Uri(baseAddress);",
+            "protectedSnippet": "M:System.Uri.#ctor(System.String)",
+            "label": "M:System.Uri.#ctor(System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/uri-length-limits-removed.md",
+                "isCustom": false
+              }
+            ],
+            "line": 15,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "cd8e1c18-cd64-4d21-80dc-99236a36d08c",
+          "ruleId": "Api.0003",
+          "description": "Breaking change: URI length limits removed ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_httpClient.BaseAddress = new Uri(baseAddress);",
+              "protected": "T:System.Uri"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "_httpClient.BaseAddress = new Uri(baseAddress);",
+            "protectedSnippet": "T:System.Uri",
+            "label": "T:System.Uri",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/uri-length-limits-removed.md",
+                "isCustom": false
+              }
+            ],
+            "line": 15,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "c94efe6f-c3d1-40b9-a18d-f7251ff871b4",
+          "ruleId": "Api.0001",
+          "description": "Breaking change: DynamicallyAccessedMembers annotation removed from trim-unsafe configuration APIs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "var baseAddress = configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiBaseAddress\u0022) ?? throw new Exception(\u0022SmartThingsApiBaseAddress app setting is null. Please set the value in the appsettings.json\u0022);",
+              "protected": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "var baseAddress = configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiBaseAddress\u0022) ?? throw new Exception(\u0022SmartThingsApiBaseAddress app setting is null. Please set the value in the appsettings.json\u0022);",
+            "protectedSnippet": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "label": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/extensions/10.0/dynamically-accessed-members-configuration.md",
+                "isCustom": false
+              }
+            ],
+            "line": 14,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "efc15f92-dedc-4690-9b65-348ee6cfe085",
+          "ruleId": "Api.0001",
+          "description": "Breaking change: DynamicallyAccessedMembers annotation removed from trim-unsafe configuration APIs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "var accessToken = configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiAccessToken\u0022) ?? throw new Exception(\u0022SmartThingsApiAccessToken app setting is null. Please set the value in the appsettings.json\u0022);",
+              "protected": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "var accessToken = configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiAccessToken\u0022) ?? throw new Exception(\u0022SmartThingsApiAccessToken app setting is null. Please set the value in the appsettings.json\u0022);",
+            "protectedSnippet": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "label": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/extensions/10.0/dynamically-accessed-members-configuration.md",
+                "isCustom": false
+              }
+            ],
+            "line": 16,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "5670fae7-c9c6-4506-b122-e4916554be96",
+          "ruleId": "Api.0003",
+          "description": "Breaking change: URI length limits removed ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_httpClient.BaseAddress = new Uri(baseAddress);",
+              "protected": "T:System.Uri"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "_httpClient.BaseAddress = new Uri(baseAddress);",
+            "protectedSnippet": "T:System.Uri",
+            "label": "T:System.Uri",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/uri-length-limits-removed.md",
+                "isCustom": false
+              }
+            ],
+            "line": 15,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "ba36c2ed-2ff3-4f76-a93d-732b797adc1e",
+          "ruleId": "Api.0003",
+          "description": "Breaking change: URI length limits removed ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_httpClient.BaseAddress = new Uri(baseAddress);",
+              "protected": "M:System.Uri.#ctor(System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "_httpClient.BaseAddress = new Uri(baseAddress);",
+            "protectedSnippet": "M:System.Uri.#ctor(System.String)",
+            "label": "M:System.Uri.#ctor(System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/uri-length-limits-removed.md",
+                "isCustom": false
+              }
+            ],
+            "line": 15,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "f4d989ff-6dfb-45e3-a6b7-0f3ab8770c33",
+          "ruleId": "Api.0003",
+          "description": "Breaking change: URI length limits removed ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "_httpClient.BaseAddress = new Uri(baseAddress);",
+              "protected": "T:System.Uri"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "_httpClient.BaseAddress = new Uri(baseAddress);",
+            "protectedSnippet": "T:System.Uri",
+            "label": "T:System.Uri",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/uri-length-limits-removed.md",
+                "isCustom": false
+              }
+            ],
+            "line": 15,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "889dfd13-16c0-4ed3-991b-78e511f7e723",
+          "ruleId": "Api.0001",
+          "description": "Breaking change: DynamicallyAccessedMembers annotation removed from trim-unsafe configuration APIs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "var baseAddress = configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiBaseAddress\u0022) ?? throw new Exception(\u0022SmartThingsApiBaseAddress app setting is null. Please set the value in the appsettings.json\u0022);",
+              "protected": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Services\\SmartThingsService.cs",
+            "snippet": "var baseAddress = configuration.GetValue\u003Cstring\u003E(\u0022SmartThingsApiBaseAddress\u0022) ?? throw new Exception(\u0022SmartThingsApiBaseAddress app setting is null. Please set the value in the appsettings.json\u0022);",
+            "protectedSnippet": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "label": "M:Microsoft.Extensions.Configuration.ConfigurationBinder.GetValue\u0060\u00601(Microsoft.Extensions.Configuration.IConfiguration,System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/extensions/10.0/dynamically-accessed-members-configuration.md",
+                "isCustom": false
+              }
+            ],
+            "line": 14,
+            "column": 8
+          }
+        },
+        {
+          "incidentId": "b0ea1e5a-7572-495b-845b-b71340f3dfd9",
+          "ruleId": "Api.0003",
+          "description": "URI query redaction in IHttpClientFactory logs ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "builder.Services.AddHttpClient();",
+              "protected": "M:Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensions.AddHttpClient(Microsoft.Extensions.DependencyInjection.IServiceCollection)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Program.cs",
+            "snippet": "builder.Services.AddHttpClient();",
+            "protectedSnippet": "M:Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensions.AddHttpClient(Microsoft.Extensions.DependencyInjection.IServiceCollection)",
+            "label": "M:Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensions.AddHttpClient(Microsoft.Extensions.DependencyInjection.IServiceCollection)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/9.0/query-redaction-logs.md",
+                "isCustom": false
+              }
+            ],
+            "line": 10,
+            "column": 0
+          }
+        },
+        {
+          "incidentId": "fd7449aa-4ff0-4088-bc74-e0d938eb402d",
+          "ruleId": "Api.0003",
+          "description": "Breaking change: URI length limits removed ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "builder.Services.AddScoped(sp =\u003E new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });",
+              "protected": "T:System.Uri"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Program.cs",
+            "snippet": "builder.Services.AddScoped(sp =\u003E new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });",
+            "protectedSnippet": "T:System.Uri",
+            "label": "T:System.Uri",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/uri-length-limits-removed.md",
+                "isCustom": false
+              }
+            ],
+            "line": 9,
+            "column": 0
+          }
+        },
+        {
+          "incidentId": "2d731b6f-51ef-41d4-a157-cbdd58b2ced5",
+          "ruleId": "Api.0003",
+          "description": "Breaking change: URI length limits removed ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "builder.Services.AddScoped(sp =\u003E new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });",
+              "protected": "M:System.Uri.#ctor(System.String)"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Program.cs",
+            "snippet": "builder.Services.AddScoped(sp =\u003E new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });",
+            "protectedSnippet": "M:System.Uri.#ctor(System.String)",
+            "label": "M:System.Uri.#ctor(System.String)",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/uri-length-limits-removed.md",
+                "isCustom": false
+              }
+            ],
+            "line": 9,
+            "column": 0
+          }
+        },
+        {
+          "incidentId": "c50cea08-4da3-4e97-bcc2-5f557c00cd3e",
+          "ruleId": "Api.0003",
+          "description": "Breaking change: URI length limits removed ",
+          "projectPath": "FamilyDashboard.Blazor\\FamilyDashboard.Blazor.csproj",
+          "state": "Active",
+          "location": {
+            "snippetModel": {
+              "unrestricted": "builder.Services.AddScoped(sp =\u003E new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });",
+              "protected": "T:System.Uri"
+            },
+            "kind": "File",
+            "path": "FamilyDashboard.Blazor\\Program.cs",
+            "snippet": "builder.Services.AddScoped(sp =\u003E new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });",
+            "protectedSnippet": "T:System.Uri",
+            "label": "T:System.Uri",
+            "links": [
+              {
+                "title": "API documentation",
+                "url": "https://github.com/dotnet/docs/blob/main/docs/core/compatibility/networking/10.0/uri-length-limits-removed.md",
+                "isCustom": false
+              }
+            ],
+            "line": 9,
+            "column": 0
+          }
+        }
+      ],
+      "features": []
+    }
+  ],
+  "rules": {
+    "NuGet.0002": {
+      "id": "NuGet.0002",
+      "isFeature": false,
+      "description": "NuGet package upgrade is recommended for selected target framework.\n\nStandard .NET packages are recommended to have versions matching version of .NET that project targets.\n\nSome other packages also are known to work better for selected target frameworks.",
+      "label": "NuGet package upgrade is recommended",
+      "severity": "Potential",
+      "effort": 1,
+      "links": [
+        {
+          "url": "https://go.microsoft.com/fwlink/?linkid=2262530",
+          "isCustom": false
+        }
+      ]
+    },
+    "Project.0002": {
+      "id": "Project.0002",
+      "isFeature": false,
+      "description": "Project\u0027s target framework(s) needs to be changed to the new target framework that you selected for this upgrade.\n\nDuring upgrade target framework will be adjusted to corresponding platform when applicable. In some cases project would result in multiple target frameworks after the upgrade if it was using features that now have their own platforms in modern .NET frameworks (windows, iOS, Android etc).",
+      "label": "Project\u0027s target framework(s) needs to be changed",
+      "severity": "Mandatory",
+      "effort": 1,
+      "links": [
+        {
+          "title": "Overview of porting from .NET Framework to .NET",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2265227",
+          "isCustom": false
+        },
+        {
+          "title": ".NET project SDKs",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2265226",
+          "isCustom": false
+        }
+      ]
+    },
+    "Api.0001": {
+      "id": "Api.0001",
+      "isFeature": false,
+      "description": "API is binary incompatible for selected .NET version: affects existing binaries, often requiring recompilation, because the API has changed in a way that prevents older binaries from loading or executing.",
+      "label": "Binary incompatible for selected .NET version",
+      "severity": "Mandatory",
+      "effort": 1,
+      "links": [
+        {
+          "title": "Breaking changes in .NET",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2262679",
+          "isCustom": false
+        }
+      ]
+    },
+    "Api.0002": {
+      "id": "Api.0002",
+      "isFeature": false,
+      "description": "API is source incompatible for selected .NET version: requires code changes to compile successfully when targeting a new version, such as removing obsolete APIs or changing method signatures.",
+      "label": "Source incompatible for selected .NET version",
+      "severity": "Potential",
+      "effort": 1,
+      "links": [
+        {
+          "title": "Breaking changes in .NET",
+          "url": "https://go.microsoft.com/fwlink/?linkid=2262679",
+          "isCustom": false
+        }
+      ]
+    },
+    "Api.0003": {
+      "id": "Api.0003",
+      "isFeature": false,
+      "description": "API has a behavioral change in selected .NET version: code and binaries may behave differently at runtime without needing recompilation, but the new behavior might be undesirable and require updates.",
+      "label": "Behavioral change in selected .NET version",
+      "severity": "Potential",
+      "effort": 1
+    }
+  }
+}
