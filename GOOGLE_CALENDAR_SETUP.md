@@ -189,7 +189,7 @@ Click **"OK"** to close the modal.
   "Locale": "New York",
   "GoogleOAuth": {
     "ClientId": "YOUR CLIENT ID",
-    "ClientSecret": "YOUR CLIENT SECRET",
+    "ClientSecret": "ENTER YOURS HERE",
     "RedirectUri": "https://localhost:7104/oauth-callback",
     "CalendarIds": [
       "john.smith@gmail.com",
