@@ -13,5 +13,7 @@ builder.Services.AddScoped<IRandomJokeService, RandomJokeService>();
 builder.Services.AddScoped<IRandomQuoteService, RandomQuoteService>();
 builder.Services.AddScoped<IWeatherForecastService, WeatherForecastService>();
 builder.Services.AddScoped<ISmartHomeService, SmartThingsService>();
+builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+builder.Services.AddScoped<ICalendarService, GoogleCalendarService>();
 
 await builder.Build().RunAsync();

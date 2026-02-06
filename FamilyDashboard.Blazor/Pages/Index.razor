@@ -1,5 +1,9 @@
 ﻿@page "/"
+@using Microsoft.AspNetCore.Components.Routing
 @inject IConfiguration Configuration
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@implements IDisposable
 
 <div class="row">
     <div class="col p-3">
@@ -14,52 +18,142 @@
         <div class="nav flex-column nav-pills me-3" role="tablist" aria-orientation="vertical">
             @if (_showSmartThingsTab)
             {
-                <button class="nav-link active" id="smarthome-tab" data-bs-toggle="pill" data-bs-target="#smarthome-tab-pane" type="button" role="tab" aria-controls="smarthome-tab-pane" aria-selected="false">Smart Home</button>
+                <button class="nav-link @(activeTab == "smarthome" ? "active" : "")" 
+                        @onclick='() => ChangeTab("smarthome")'>Smart Home</button>
             }
             @if (_showWeatherTab)
             {
-                <button class="nav-link" id="weather-tab" data-bs-toggle="pill" data-bs-target="#weather-tab-pane" type="button" role="tab" aria-controls="weather-tab-pane" aria-selected="true">Weather</button>
+                <button class="nav-link @(activeTab == "weather" ? "active" : "")" 
+                        @onclick='() => ChangeTab("weather")'>Weather</button>
             }
             @if (_showCalendarTab)
             {
-                <button class="nav-link" id="calendar-tab" data-bs-toggle="pill" data-bs-target="#calendar-tab-pane" type="button" role="tab" aria-controls="calendar-tab-pane" aria-selected="false">Calendar</button>
+                <button class="nav-link @(activeTab == "calendar" ? "active" : "")" 
+                        @onclick='() => ChangeTab("calendar")'>Calendar</button>
             }
         </div>
     </div>
     <div class="col-11 tab-content ms-2">
         @if (_showSmartThingsTab)
         {
-            <div class="tab-pane fade show active" id="smarthome-tab-pane" role="tabpanel" aria-labelledby="smarthome-tab" tabindex="0">
+            <div class="tab-pane fade @(activeTab == "smarthome" ? "show active" : "")">
                 <SmartHome />
             </div>
         }
         @if (_showWeatherTab)
         {
-            <div class="tab-pane fade" id="weather-tab-pane" role="tabpanel" aria-labelledby="weather-tab" tabindex="0">
+            <div class="tab-pane fade @(activeTab == "weather" ? "show active" : "")">
                 <WeatherForecast />
             </div>
         }
         @if (_showCalendarTab)
         {
-            <div class="tab-pane fade" id="calendar-tab-pane" role="tabpanel" aria-labelledby="calendar-tab" tabindex="0">
+            <div class="tab-pane fade @(activeTab == "calendar" ? "show active" : "")">
                 <Calendar />
             </div>
         }
     </div>
 </div>
 
+
 @code {
     bool _showSmartThingsTab = false;
     bool _showWeatherTab = false;
     bool _showCalendarTab = false;
+    string activeTab = "";
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _showSmartThingsTab = Configuration != null && Configuration.GetValue<string>("SmartThingsApiBaseAddress") != null &&
             Configuration.GetValue<string>("SmartThingsApiAccessToken") != null;
         _showWeatherTab = Configuration != null && Configuration.GetValue<string>("Locale") != null;
-        _showCalendarTab = Configuration != null && Configuration.GetValue<string>("GoogleCalendarEmbedCode") != null;
+        _showCalendarTab = Configuration != null && 
+            (Configuration.GetValue<string>("GoogleOAuth:ClientId") != null || 
+             Configuration.GetValue<string>("GoogleCalendarEmbedCode") != null);
 
+        // Load active tab from URL or localStorage
+        await LoadActiveTabAsync();
+        
+        NavigationManager.LocationChanged += OnLocationChanged;
+        
         base.OnInitialized();
     }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        var uri = new Uri(e.Location);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var tabFromUrl = query["tab"];
+        
+        if (!string.IsNullOrEmpty(tabFromUrl))
+        {
+            activeTab = tabFromUrl;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadActiveTabAsync()
+    {
+        // Check URL first
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var tabFromUrl = query["tab"];
+        
+        if (!string.IsNullOrEmpty(tabFromUrl))
+        {
+            activeTab = tabFromUrl;
+        }
+        else
+        {
+            // Load from localStorage
+            try
+            {
+                var storedTab = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "active_tab");
+                if (!string.IsNullOrEmpty(storedTab))
+                {
+                    activeTab = storedTab;
+                }
+                else
+                {
+                    // Default to first available tab
+                    activeTab = _showSmartThingsTab ? "smarthome" : 
+                                _showWeatherTab ? "weather" : 
+                                _showCalendarTab ? "calendar" : "";
+                }
+            }
+            catch
+            {
+                activeTab = _showSmartThingsTab ? "smarthome" : 
+                            _showWeatherTab ? "weather" : 
+                            _showCalendarTab ? "calendar" : "";
+            }
+        }
+    }
+
+    private async void ChangeTab(string tab)
+    {
+        activeTab = tab;
+        
+        // Update URL
+        NavigationManager.NavigateTo($"/?tab={tab}", false);
+        
+        // Save to localStorage
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "active_tab", tab);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving active tab: {ex.Message}");
+        }
+        
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
+    }
 }
+
+

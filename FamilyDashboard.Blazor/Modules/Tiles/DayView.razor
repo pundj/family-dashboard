@@ -1,0 +1,327 @@
+@using FamilyDashboard.Blazor.Models.Calendar
+@inject IJSRuntime JSRuntime
+
+<div class="day-view" @ref="dayViewRef">
+    @if (!Events.Any())
+    {
+        <p class="no-events">No events for this day</p>
+    }
+    else
+    {
+        @* All-Day Events Section *@
+        @if (allDayEvents.Any())
+        {
+            <div class="all-day-section">
+                <div class="all-day-events">
+                    @foreach (var evt in allDayEvents)
+                    {
+                        var isPast = evt.EndTime < DateTime.Now;
+                        var filterStyle = isPast ? "brightness(1.1) saturate(0.4) opacity(0.7)" : "brightness(1.1)";
+                        
+                        <div class="event-item all-day-event @(isPast ? "past-event" : "")" 
+                             @onclick="() => OnEventClick.InvokeAsync(evt)"
+                             style="background: @evt.Color; border-left: 5px solid @evt.Color; filter: @filterStyle;">
+                            <div class="event-details">
+                                <div class="event-title">@evt.Title</div>
+                                @if (!string.IsNullOrEmpty(evt.Location))
+                                {
+                                    <div class="event-location">?? @evt.Location</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        @* Timed Events Section *@
+        @if (timedEvents.Any())
+        {
+            <div class="timed-events-section">
+                <div class="events-list">
+                    @if (IsToday)
+                    {
+                        var now = DateTime.Now;
+                        var indicatorInserted = false;
+                        
+                        @foreach (var evt in timedEvents)
+                        {
+                            @* Insert time indicator before events that start after current time *@
+                            if (!indicatorInserted && evt.StartTime > now)
+                            {
+                                <div class="current-time-indicator" @ref="currentTimeRef">
+                                    <div class="time-line"></div>
+                                    <div class="time-label">@now.ToString("h:mm tt")</div>
+                                </div>
+                                indicatorInserted = true;
+                            }
+                            
+                            var isPast = evt.EndTime < now;
+                            var filterStyle = isPast ? "brightness(1.1) saturate(0.4) opacity(0.7)" : "brightness(1.1)";
+                            
+                            <div class="event-item @(isPast ? "past-event" : "")" 
+                                 @onclick="() => OnEventClick.InvokeAsync(evt)"
+                                 style="background: @evt.Color; border-left: 5px solid @evt.Color; filter: @filterStyle;">
+                                <div class="event-time">
+                                    <span>@evt.StartTime.ToString("h:mm tt") - @evt.EndTime.ToString("h:mm tt")</span>
+                                </div>
+                                <div class="event-details">
+                                    <div class="event-title">@evt.Title</div>
+                                    @if (!string.IsNullOrEmpty(evt.Location))
+                                    {
+                                        <div class="event-location">?? @evt.Location</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        
+                        @* If indicator wasn't inserted (current time is after all events), show it at the end *@
+                        @if (!indicatorInserted)
+                        {
+                            <div class="current-time-indicator" @ref="currentTimeRef">
+                                <div class="time-line"></div>
+                                <div class="time-label">@now.ToString("h:mm tt")</div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var evt in timedEvents)
+                        {
+                            var isPast = evt.EndTime < DateTime.Now;
+                            var filterStyle = isPast ? "brightness(1.1) saturate(0.4) opacity(0.7)" : "brightness(1.1)";
+                            
+                            <div class="event-item @(isPast ? "past-event" : "")" 
+                                 @onclick="() => OnEventClick.InvokeAsync(evt)"
+                                 style="background: @evt.Color; border-left: 5px solid @evt.Color; filter: @filterStyle;">
+                                <div class="event-time">
+                                    <span>@evt.StartTime.ToString("h:mm tt") - @evt.EndTime.ToString("h:mm tt")</span>
+                                </div>
+                                <div class="event-details">
+                                    <div class="event-title">@evt.Title</div>
+                                    @if (!string.IsNullOrEmpty(evt.Location))
+                                    {
+                                        <div class="event-location">?? @evt.Location</div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<style>
+    .day-view {
+        padding: 1rem;
+        color: var(--bs-body-color);
+        position: relative;
+        max-height: 600px;
+        overflow-y: auto;
+        scroll-behavior: smooth;
+    }
+
+    .all-day-section {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid var(--bs-border-color);
+    }
+
+    .section-header {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--bs-secondary-color);
+        margin-bottom: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+
+    .all-day-events {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .timed-events-section {
+        position: relative;
+    }
+
+    .events-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        position: relative;
+    }
+
+    .event-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: white;
+        font-weight: 500;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        max-width: 100%;
+    }
+
+    .event-item.all-day-event {
+        padding: 0.75rem 1rem;
+    }
+
+    .event-item.all-day-event .event-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .event-item:hover {
+        filter: brightness(0.9) !important;
+        transform: translateX(4px) scale(1.01);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .event-item.past-event {
+        position: relative;
+    }
+
+    .event-item.past-event::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        pointer-events: none;
+    }
+
+    .event-time {
+        min-width: 140px;
+        font-weight: 600;
+        opacity: 0.95;
+        font-size: 0.9rem;
+        flex-shrink: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .event-details {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+    }
+
+    .event-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        font-size: 1.05rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .event-location {
+        font-size: 0.9rem;
+        opacity: 0.9;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .no-events {
+        text-align: center;
+        color: var(--bs-secondary-color);
+        padding: 2rem;
+    }
+
+    .current-time-indicator {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        height: 1.6rem; /* Reserve vertical space so it doesn't overlap events */
+        margin: 0.75rem 0;
+    }
+
+    .time-line {
+        flex: 1;
+        height: 2px;
+        background: #dc3545;
+    }
+
+    .time-label {
+        position: relative;
+        margin-left: 6px;
+        background: #dc3545;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        white-space: nowrap;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public List<CalendarEvent> Events { get; set; } = new();
+
+    [Parameter]
+    public DateTime CurrentDate { get; set; }
+
+    [Parameter]
+    public EventCallback<CalendarEvent> OnEventClick { get; set; }
+
+    private ElementReference dayViewRef;
+    private ElementReference currentTimeRef;
+    private bool IsToday => CurrentDate.Date == DateTime.Today;
+    private List<CalendarEvent> allDayEvents = new();
+    private List<CalendarEvent> timedEvents = new();
+    private DateTime? _lastScrolledDate;
+
+    protected override void OnParametersSet()
+    {
+        // Separate events into all-day and timed
+        // All-day events: sort by calendar (to group them), then by title
+        allDayEvents = Events.Where(e => e.IsAllDay)
+            .OrderBy(e => e.CalendarId)
+            .ThenBy(e => e.Title)
+            .ToList();
+        
+        // Timed events: sort by start time
+        timedEvents = Events.Where(e => !e.IsAllDay)
+            .OrderBy(e => e.StartTime)
+            .ToList();
+
+        // Reset scroll tracking when the date changes so we can scroll again
+        if (_lastScrolledDate.HasValue && _lastScrolledDate.Value.Date != CurrentDate.Date)
+        {
+            _lastScrolledDate = null;
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        // Auto-scroll to the current time indicator when viewing today's events
+        if (IsToday && timedEvents.Any() && _lastScrolledDate?.Date != CurrentDate.Date)
+        {
+            await Task.Delay(100); // small delay to ensure DOM is ready
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("scrollToCurrentTime", dayViewRef, currentTimeRef);
+                _lastScrolledDate = CurrentDate.Date;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error scrolling to current time: {ex.Message}");
+            }
+        }
+    }
+}

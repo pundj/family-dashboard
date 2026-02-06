@@ -7,8 +7,9 @@ public class RandomJokeService : IRandomJokeService
 {
     private readonly HttpClient _httpClient;
 
-    public RandomJokeService(IHttpClientFactory httpClientFactory) => _httpClient = httpClientFactory.CreateClient("Jokes");
+    public RandomJokeService(HttpClient httpClient) => _httpClient = httpClient;
 
     public async Task<GetRandomJokeResponse> GetJokeAsync() => 
         (await _httpClient.GetFromJsonAsync<GetRandomJokeResponse>("https://official-joke-api.appspot.com/random_joke")) ?? new();
 }
+

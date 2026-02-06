@@ -1,0 +1,594 @@
+@using FamilyDashboard.Blazor.Models.Calendar
+
+<div class="month-view">
+    <div class="month-grid">
+        <div class="weekday-header">Sun</div>
+        <div class="weekday-header">Mon</div>
+        <div class="weekday-header">Tue</div>
+        <div class="weekday-header">Wed</div>
+        <div class="weekday-header">Thu</div>
+        <div class="weekday-header">Fri</div>
+        <div class="weekday-header">Sat</div>
+        
+        @foreach (var day in GetCalendarDays())
+        {
+            var dayEvents = Events.Where(e => e.StartTime.Date == day.Date).OrderBy(e => e.StartTime).ToList();
+            var isCurrentMonth = day.Month == CurrentDate.Month;
+            var isToday = day.Date == DateTime.Today;
+            var hasTimedEvents = dayEvents.Any(e => !e.IsAllDay);
+            
+            <div class="month-day @(isCurrentMonth ? "" : "other-month") @(isToday ? "today" : "")">
+                <div class="day-number">@day.Day</div>
+                <div class="day-events">
+                    @if (isToday && hasTimedEvents)
+                    {
+                        var now = DateTime.Now;
+                        var indicatorInserted = false;
+                        var displayedCount = 0;
+                        var maxDisplay = 2; // Leave room for indicator
+                        
+                        @foreach (var evt in dayEvents)
+                        {
+                            // Insert time indicator before events that start after current time
+                            if (!indicatorInserted && !evt.IsAllDay && evt.StartTime > now && displayedCount < maxDisplay)
+                            {
+                                <div class="current-time-indicator-month">
+                                    <span class="time-label-month">@now.ToString("h:mm tt")</span>
+                                </div>
+                                indicatorInserted = true;
+                            }
+                            
+                            if (displayedCount < maxDisplay)
+                            {
+                                <div class="month-event" @onclick="() => OnEventClick.InvokeAsync(evt)" 
+                                     style="background: @evt.Color; border-left: 4px solid @evt.Color; filter: brightness(1.1);"
+                                     title="@evt.Title @(!string.IsNullOrEmpty(evt.Location) ? $" - {evt.Location}" : "")">
+                                    @if (!evt.IsAllDay)
+                                    {
+                                        <span class="event-time-display">@evt.StartTime.ToString("h:mm tt")</span>
+                                    }
+                                    <span class="event-title-tiny">@evt.Title</span>
+                                </div>
+                                displayedCount++;
+                            }
+                        }
+                        
+                        @* If indicator wasn't inserted and we have room, show it at the end *@
+                        @if (!indicatorInserted && displayedCount < maxDisplay)
+                        {
+                            <div class="current-time-indicator-month">
+                                <span class="time-label-month">@now.ToString("h:mm tt")</span>
+                            </div>
+                        }
+                        
+                        @* Calculate remaining events *@
+                        @if (dayEvents.Count > displayedCount)
+                        {
+                            <div class="more-events" @onclick="() => ShowDayDetails(day, dayEvents)">
+                                +@(dayEvents.Count - displayedCount) more
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var evt in dayEvents.Take(3))
+                        {
+                            <div class="month-event" @onclick="() => OnEventClick.InvokeAsync(evt)" 
+                                 style="background: @evt.Color; border-left: 4px solid @evt.Color; filter: brightness(1.1);"
+                                 title="@evt.Title @(!string.IsNullOrEmpty(evt.Location) ? $" - {evt.Location}" : "")">
+                                @if (!evt.IsAllDay)
+                                {
+                                    <span class="event-time-display">@evt.StartTime.ToString("h:mm tt")</span>
+                                }
+                                <span class="event-title-tiny">@evt.Title</span>
+                            </div>
+                        }
+                        
+                        @if (dayEvents.Count > 3)
+                        {
+                            <div class="more-events" @onclick="() => ShowDayDetails(day, dayEvents)">
+                                +@(dayEvents.Count - 3) more
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (showDayModal && selectedDayEvents != null)
+{
+    var isToday = selectedDay.Date == DateTime.Today;
+    var hasTimedEvents = selectedDayEvents.Any(e => !e.IsAllDay);
+    
+    <div class="day-modal" @onclick="CloseDayDetails">
+        <div class="day-modal-content" @onclick:stopPropagation="true">
+            <div class="day-modal-header">
+                <h4>@selectedDay.ToString("MMMM d, yyyy")</h4>
+                <button class="close-btn" @onclick="CloseDayDetails">×</button>
+            </div>
+            <div class="day-modal-body">
+                @if (isToday && hasTimedEvents)
+                {
+                    var now = DateTime.Now;
+                    var indicatorInserted = false;
+                    
+                    @foreach (var evt in selectedDayEvents.OrderBy(e => e.IsAllDay ? 0 : 1).ThenBy(e => e.StartTime))
+                    {
+                        @* Insert time indicator before events that start after current time *@
+                        if (!indicatorInserted && !evt.IsAllDay && evt.StartTime > now)
+                        {
+                            <div class="current-time-indicator-modal">
+                                <div class="time-line-modal"></div>
+                                <div class="time-badge-modal">
+                                    <span class="time-label-modal">@now.ToString("h:mm tt")</span>
+                                </div>
+                            </div>
+                            indicatorInserted = true;
+                        }
+                        
+                        <div class="day-modal-event" 
+                             @onclick="() => OnEventClick.InvokeAsync(evt)"
+                             @onclick:stopPropagation="true"
+                             style="border-left: 4px solid @evt.Color;">
+                            <div class="day-modal-event-time">
+                                @if (evt.IsAllDay)
+                                {
+                                    <span>All Day</span>
+                                }
+                                else
+                                {
+                                    <span>@evt.StartTime.ToString("h:mm tt")</span>
+                                }
+                            </div>
+                            <div class="day-modal-event-details">
+                                <div class="day-modal-event-title" style="color: @evt.Color; font-weight: 600;">
+                                    @evt.Title
+                                </div>
+                                @if (!string.IsNullOrEmpty(evt.Location))
+                                {
+                                    <div class="day-modal-event-location">?? @evt.Location</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                    
+                    @* If indicator wasn't inserted (current time is after all events), show it at the end *@
+                    @if (!indicatorInserted)
+                    {
+                        <div class="current-time-indicator-modal">
+                            <div class="time-line-modal"></div>
+                            <div class="time-badge-modal">
+                                <span class="time-label-modal">@now.ToString("h:mm tt")</span>
+                            </div>
+                        </div>
+                    }
+                }
+                else
+                {
+                    @foreach (var evt in selectedDayEvents.OrderBy(e => e.IsAllDay ? 0 : 1).ThenBy(e => e.StartTime))
+                    {
+                        <div class="day-modal-event" 
+                             @onclick="() => OnEventClick.InvokeAsync(evt)"
+                             @onclick:stopPropagation="true"
+                             style="border-left: 4px solid @evt.Color;">
+                            <div class="day-modal-event-time">
+                                @if (evt.IsAllDay)
+                                {
+                                    <span>All Day</span>
+                                }
+                                else
+                                {
+                                    <span>@evt.StartTime.ToString("h:mm tt")</span>
+                                }
+                            </div>
+                            <div class="day-modal-event-details">
+                                <div class="day-modal-event-title" style="color: @evt.Color; font-weight: 600;">
+                                    @evt.Title
+                                </div>
+                                @if (!string.IsNullOrEmpty(evt.Location))
+                                {
+                                    <div class="day-modal-event-location">?? @evt.Location</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .month-view {
+        padding: 1rem;
+    }
+
+    .month-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        background: var(--bs-border-color, #ddd);
+        border: 1px solid var(--bs-border-color, #ddd);
+        width: 100%;
+        table-layout: fixed;
+    }
+
+    .weekday-header {
+        background: var(--bs-secondary-bg, #f8f9fa);
+        color: var(--bs-body-color);
+        padding: 0.75rem;
+        text-align: center;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        border-bottom: 2px solid var(--bs-border-color);
+        overflow: hidden;
+    }
+
+    .month-day {
+        background: var(--bs-body-bg, white);
+        color: var(--bs-body-color);
+        min-height: 100px;
+        max-height: 120px;
+        padding: 0.5rem;
+        /* Reserve space at the bottom so the "+X more" link can be shown */
+        padding-bottom: 1.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .month-day.other-month {
+        background: var(--bs-tertiary-bg, #f8f9fa);
+        opacity: 0.5;
+    }
+
+    .month-day.today {
+        background: var(--bs-primary-bg-subtle);
+        box-shadow: inset 0 0 0 2px var(--bs-primary);
+    }
+
+    .month-day.today .day-number {
+        background: var(--bs-primary, #007bff);
+        color: white;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .day-number {
+        font-weight: 600;
+        font-size: 0.9rem;
+        margin-bottom: 0.25rem;
+        color: var(--bs-body-color);
+    }
+
+    .day-events {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .month-event {
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        color: white;
+        font-weight: 500;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        max-width: 100%;
+    }
+
+    .month-event:hover {
+        filter: brightness(0.9) !important;
+        transform: scale(1.02);
+        z-index: 1;
+    }
+
+    .event-time-dot {
+        font-size: 0.5rem;
+        opacity: 0.9;
+        flex-shrink: 0;
+    }
+
+    .event-time-display {
+        font-size: 0.65rem;
+        font-weight: 600;
+        opacity: 0.9;
+        flex-shrink: 0;
+        white-space: nowrap;
+        margin-right: 4px;
+    }
+
+    .event-title-tiny {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
+        flex: 1;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+
+    .more-events {
+        font-size: 0.7rem;
+        color: #4a9eff;
+        padding: 2px 4px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: underline;
+        display: inline-block;
+        position: absolute;
+        left: 0.5rem;
+        right: 0.5rem;
+        bottom: 6px;
+        background: transparent;
+    }
+
+    .more-events:hover {
+        color: #2180ff;
+        transform: translateX(2px);
+    }
+
+    .current-time-indicator-month {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 2px 4px;
+        margin-top: 2px;
+        position: relative;
+    }
+
+    .current-time-indicator-month::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: 1px;
+        background: #dc3545;
+        z-index: 0;
+    }
+
+    .time-label-month {
+        font-size: 0.65rem;
+        font-weight: 600;
+        color: white;
+        background: #dc3545;
+        padding: 1px 4px;
+        border-radius: 2px;
+        white-space: nowrap;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+
+    .day-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+        animation: fadeIn 0.2s;
+    }
+
+    .day-modal-content {
+        background: var(--bs-body-bg, white);
+        color: var(--bs-body-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s;
+    }
+
+    .day-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid var(--bs-border-color);
+        padding-bottom: 0.5rem;
+    }
+
+    .day-modal-header h4 {
+        margin: 0;
+        color: var(--bs-body-color);
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        line-height: 1;
+        color: var(--bs-body-color);
+        transition: transform 0.2s;
+    }
+
+    .close-btn:hover {
+        transform: rotate(90deg);
+        color: #dc3545;
+    }
+
+    .day-modal-body {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .day-modal-event {
+        display: flex;
+        gap: 1rem;
+        padding: 0.75rem;
+        background: var(--bs-secondary-bg);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        align-items: center;
+    }
+
+    .day-modal-event:hover {
+        background: var(--bs-tertiary-bg);
+        transform: translateX(4px);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .day-modal-event-time {
+        min-width: 80px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: var(--bs-secondary-color);
+        flex-shrink: 0;
+    }
+
+    .day-modal-event-details {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .day-modal-event-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .day-modal-event-location {
+        font-size: 0.85rem;
+        color: var(--bs-secondary-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .current-time-indicator-modal {
+        position: relative;
+        margin: 0.5rem 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .time-line-modal {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: #dc3545;
+        z-index: 0;
+    }
+
+    .time-badge-modal {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .time-label-modal {
+        background: #dc3545;
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+@code {
+[Parameter]
+public List<CalendarEvent> Events { get; set; } = new();
+
+[Parameter]
+public DateTime CurrentDate { get; set; }
+
+[Parameter]
+public EventCallback<CalendarEvent> OnEventClick { get; set; }
+
+[Parameter]
+public EventCallback<bool> OnModalStateChanged { get; set; }
+
+private bool showDayModal = false;
+private DateTime selectedDay;
+private List<CalendarEvent>? selectedDayEvents;
+
+private async Task ShowDayDetails(DateTime day, List<CalendarEvent> events)
+{
+    selectedDay = day;
+    selectedDayEvents = events;
+    showDayModal = true;
+    await OnModalStateChanged.InvokeAsync(true);
+}
+
+private async Task CloseDayDetails()
+{
+    showDayModal = false;
+    selectedDayEvents = null;
+    await OnModalStateChanged.InvokeAsync(false);
+}
+
+    private List<DateTime> GetCalendarDays()
+    {
+        var firstDayOfMonth = new DateTime(CurrentDate.Year, CurrentDate.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+        
+        var startDate = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+        var endDate = lastDayOfMonth.AddDays(6 - (int)lastDayOfMonth.DayOfWeek);
+        
+        var days = new List<DateTime>();
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            days.Add(date);
+        }
+        
+        return days;
+    }
+}

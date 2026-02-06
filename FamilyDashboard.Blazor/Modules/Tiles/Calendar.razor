@@ -1,4 +1,1122 @@
-﻿@inject IConfiguration Configuration
+﻿@using FamilyDashboard.Blazor.Models.Calendar
+@using FamilyDashboard.Blazor.Services
+@using System.Text.Json
+@inject ICalendarService CalendarService
+@inject IGoogleAuthService AuthService
+@inject IConfiguration Configuration
+@inject IJSRuntime JSRuntime
+@implements IDisposable
 
-<h3>Calendar</h3>
-@((MarkupString)Configuration.GetValue<string>("GoogleCalendarEmbedCode")!)
+<div class="calendar-container">
+    @if (!isAuthenticated)
+    {
+        <div class="auth-required">
+            <h3>Calendar</h3>
+            <div class="auth-message">
+                <p>Sign in with your Google account to view your calendars.</p>
+                <button class="btn btn-primary" @onclick="SignIn">
+                    <span class="google-icon">G</span> Sign in with Google
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="calendar-header">
+            <div class="header-top">
+                <h3>Calendar</h3>
+                <div class="header-actions">
+                    <button class="btn btn-sm btn-settings" @onclick="() => showSettings = !showSettings" title="Calendar Settings">
+                        ⚙️
+                    </button>
+                </div>
+            </div>
+            <div class="calendar-controls-row">
+                <div class="calendar-controls">
+                    <button class="btn btn-sm" @onclick="PreviousPeriod">◀</button>
+                    <span class="current-period">@GetPeriodDisplay()</span>
+                    <button class="btn btn-sm" @onclick="NextPeriod">▶</button>
+                    <button class="btn btn-sm" @onclick="Today">Today</button>
+                </div>
+                <div class="view-selector">
+                    <button class="btn btn-sm @(ViewType == CalendarViewType.Day ? "active" : "")" 
+                            @onclick="() => ChangeView(CalendarViewType.Day)">Day</button>
+                    <button class="btn btn-sm @(ViewType == CalendarViewType.Week ? "active" : "")" 
+                            @onclick="() => ChangeView(CalendarViewType.Week)">Week</button>
+                    <button class="btn btn-sm @(ViewType == CalendarViewType.Month ? "active" : "")" 
+                            @onclick="() => ChangeView(CalendarViewType.Month)">Month</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="calendar-body">
+            @if (isLoading)
+            {
+                <p>Loading events...</p>
+            }
+            else if (ViewType == CalendarViewType.Day)
+            {
+                <DayView Events="@filteredEvents" CurrentDate="@currentDate" OnEventClick="ShowEventDetails" />
+            }
+            else if (ViewType == CalendarViewType.Week)
+            {
+                <WeekView Events="@filteredEvents" StartDate="@GetWeekStart()" WeekStart="@WeekStart" OnEventClick="ShowEventDetails" />
+            }
+            else if (ViewType == CalendarViewType.Month)
+            {
+                <MonthView Events="@filteredEvents" CurrentDate="@currentDate" OnEventClick="ShowEventDetails" OnModalStateChanged="HandleChildModalStateChanged" />
+            }
+        </div>
+    }
+</div>
+
+@if (showSettings)
+{
+    <div class="settings-modal" @onclick="async () => await CloseSettings()">
+        <div class="settings-content" @onclick:stopPropagation="true">
+            <div class="settings-header">
+                <h4>Calendar Settings</h4>
+                <button class="close-btn" @onclick="async () => await CloseSettings()">×</button>
+            </div>
+            <div class="settings-body">
+                <h5>Week Start Day</h5>
+                <div class="week-start-setting">
+                    <label class="radio-label">
+                        <input type="radio" name="weekStartSetting" checked="@(WeekStart == WeekStartDay.Sunday)" 
+                               @onchange="() => ChangeWeekStart(WeekStartDay.Sunday)" />
+                        <span>Sunday</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="weekStartSetting" checked="@(WeekStart == WeekStartDay.Monday)" 
+                               @onchange="() => ChangeWeekStart(WeekStartDay.Monday)" />
+                        <span>Monday</span>
+                    </label>
+                </div>
+                
+                <h5>Manage Calendars</h5>
+                @foreach (var calendar in calendarPreferences.Calendars.Values.OrderBy(c => c.DisplayName))
+                {
+                    <div class="calendar-setting-item">
+                        <div class="calendar-info">
+                            <input type="checkbox" 
+                                   checked="@calendar.IsVisible" 
+                                   @onchange="e => ToggleCalendarVisibility(calendar.CalendarId, (bool)e.Value!)" />
+                            <input type="color" 
+                                   value="@calendar.Color" 
+                                   @onchange="e => UpdateCalendarColor(calendar.CalendarId, e.Value?.ToString() ?? calendar.Color)" 
+                                   class="color-picker" />
+                            <span class="calendar-name">@calendar.DisplayName</span>
+                        </div>
+                    </div>
+                }
+                <div class="settings-actions">
+                    <button class="btn btn-sm btn-danger" @onclick="SignOut">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (selectedEvent != null)
+{
+    <div class="event-modal" @onclick="CloseEventDetails">
+        <div class="event-modal-content" @onclick:stopPropagation="true">
+            <div class="event-modal-header">
+                <h4>@selectedEvent.Title</h4>
+                <button class="close-btn" @onclick="CloseEventDetails">×</button>
+            </div>
+            <div class="event-modal-body">
+                @if (!string.IsNullOrEmpty(selectedEvent.CalendarId) && calendarPreferences.Calendars.TryGetValue(selectedEvent.CalendarId, out var calSettings))
+                {
+                    <div class="event-detail">
+                        <strong>Calendar:</strong> 
+                        <span class="calendar-badge" style="background: @calSettings.Color; color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem;">
+                            @calSettings.DisplayName
+                        </span>
+                    </div>
+                }
+                <div class="event-detail">
+                    <strong>Start:</strong> @selectedEvent.StartTime.ToString(selectedEvent.IsAllDay ? "MMMM d, yyyy" : "MMMM d, yyyy h:mm tt")
+                </div>
+                <div class="event-detail">
+                    <strong>End:</strong> @selectedEvent.EndTime.ToString(selectedEvent.IsAllDay ? "MMMM d, yyyy" : "MMMM d, yyyy h:mm tt")
+                </div>
+                @if (!string.IsNullOrEmpty(selectedEvent.Location))
+                {
+                    <div class="event-detail">
+                        <strong>Location:</strong> @selectedEvent.Location
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(selectedEvent.Description))
+                {
+                    <div class="event-detail">
+                        <strong>Description:</strong>
+                        <div class="event-description">
+                            @((MarkupString)ProcessDescriptionHtml(selectedEvent.Description))
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private CalendarViewType ViewType { get; set; } = CalendarViewType.Day;
+    private WeekStartDay WeekStart { get; set; } = WeekStartDay.Sunday;
+    private DateTime currentDate = DateTime.Today;
+    private List<CalendarEvent> events = new();
+    private List<CalendarEvent> filteredEvents = new();
+    private CalendarEvent? selectedEvent;
+    private bool isLoading = false;
+    private bool isAuthenticated = false;
+    private bool showSettings = false;
+    private CalendarPreferences calendarPreferences = new();
+    private List<string> configuredCalendarIds = new();
+    private Dictionary<string, string> customCalendarNames = new();
+    private System.Threading.Timer? _refreshTimer;
+    private bool _needsRefreshAfterModalClose = false;
+    private bool _childModalOpen = false;
+
+    private static readonly Dictionary<string, string> DefaultColors = new()
+    {
+        { "primary", "#3788d8" },
+        { "secondary", "#f4511e" },
+        { "tertiary", "#0b8043" },
+        { "quaternary", "#8e24aa" },
+        { "quinary", "#e67c73" },
+        { "senary", "#f6bf26" },
+        { "septenary", "#33b679" },
+        { "octonary", "#039be5" },
+        { "nonary", "#616161" },
+        { "denary", "#d50000" }
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        AuthService.OnAuthStateChanged += HandleAuthStateChanged;
+        
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        
+        // Load configured calendar IDs
+        var settings = Configuration.GetSection("GoogleOAuth").Get<GoogleOAuthSettings>();
+        configuredCalendarIds = settings?.CalendarIds ?? new List<string>();
+        customCalendarNames = settings?.CalendarNames ?? new Dictionary<string, string>();
+        
+        // Load preferences and view state
+        await LoadPreferencesAsync();
+        await LoadViewStateAsync();
+        
+        if (isAuthenticated)
+        {
+            await LoadEvents();
+            StartAutoRefresh();
+        }
+    }
+
+    private void StartAutoRefresh()
+    {
+        // Refresh events every minute (60000 milliseconds)
+        _refreshTimer = new System.Threading.Timer(async _ =>
+        {
+            await RefreshEventsIfNoModalOpen();
+        }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
+    }
+
+    private async Task RefreshEventsIfNoModalOpen()
+    {
+        if (!isAuthenticated)
+            return;
+
+        // Check if any modal is open (parent or child)
+        var isModalOpen = showSettings || selectedEvent != null || _childModalOpen;
+
+        if (isModalOpen)
+        {
+            // Mark that we need to refresh when modal closes
+            _needsRefreshAfterModalClose = true;
+            return;
+        }
+
+        // No modal open, safe to refresh
+        await InvokeAsync(async () =>
+        {
+            await LoadEvents(showLoadingState: false); // Don't show loading during auto-refresh
+            StateHasChanged();
+        });
+    }
+
+    private async Task HandleChildModalStateChanged(bool isOpen)
+    {
+        _childModalOpen = isOpen;
+        
+        // If child modal closed and we need to refresh
+        if (!isOpen && _needsRefreshAfterModalClose)
+        {
+            _needsRefreshAfterModalClose = false;
+            await LoadEvents(showLoadingState: false); // Silent refresh after modal close
+        }
+    }
+
+    private async Task LoadViewStateAsync()
+    {
+        try
+        {
+            var viewStateJson = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "calendar_view_state");
+            
+            if (!string.IsNullOrEmpty(viewStateJson))
+            {
+                var viewState = JsonSerializer.Deserialize<CalendarViewState>(viewStateJson);
+                if (viewState != null)
+                {
+                    ViewType = viewState.ViewType;
+                    WeekStart = viewState.WeekStart;
+                    if (viewState.CurrentDate.HasValue)
+                    {
+                        currentDate = viewState.CurrentDate.Value;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading view state: {ex.Message}");
+        }
+    }
+
+    private async Task SaveViewStateAsync()
+    {
+        try
+        {
+            var viewState = new CalendarViewState
+            {
+                ViewType = ViewType,
+                WeekStart = WeekStart,
+                CurrentDate = currentDate
+            };
+            
+            var viewStateJson = JsonSerializer.Serialize(viewState);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendar_view_state", viewStateJson);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving view state: {ex.Message}");
+        }
+    }
+
+    private async Task LoadPreferencesAsync()
+    {
+        try
+        {
+            var prefsJson = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "calendar_preferences");
+            
+            if (!string.IsNullOrEmpty(prefsJson))
+            {
+                var loadedPrefs = JsonSerializer.Deserialize<CalendarPreferences>(prefsJson);
+                if (loadedPrefs != null)
+                {
+                    calendarPreferences = loadedPrefs;
+                }
+            }
+            
+            // Initialize any missing calendars
+            var colorIndex = 0;
+            var colorKeys = DefaultColors.Keys.ToArray();
+            
+            foreach (var calId in configuredCalendarIds)
+            {
+                if (!calendarPreferences.Calendars.ContainsKey(calId))
+                {
+                    var displayName = GetCalendarDisplayName(calId);
+                    var color = DefaultColors[colorKeys[colorIndex % colorKeys.Length]];
+                    colorIndex++;
+                    
+                    calendarPreferences.Calendars[calId] = new CalendarSettings
+                    {
+                        CalendarId = calId,
+                        DisplayName = displayName,
+                        Color = color,
+                        IsVisible = true
+                    };
+                }
+                else
+                {
+                    // Update display name in case it changed in appsettings
+                    var currentDisplayName = GetCalendarDisplayName(calId);
+                    if (calendarPreferences.Calendars[calId].DisplayName != currentDisplayName)
+                    {
+                        calendarPreferences.Calendars[calId].DisplayName = currentDisplayName;
+                    }
+                }
+            }
+            
+            await SavePreferencesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading preferences: {ex.Message}");
+        }
+    }
+
+    private async Task SavePreferencesAsync()
+    {
+        try
+        {
+            var prefsJson = JsonSerializer.Serialize(calendarPreferences);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendar_preferences", prefsJson);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving preferences: {ex.Message}");
+        }
+    }
+
+    private string GetCalendarDisplayName(string calendarId)
+    {
+        // First, check if user specified a custom name in appsettings
+        if (customCalendarNames.TryGetValue(calendarId, out var customName) && !string.IsNullOrWhiteSpace(customName))
+        {
+            return customName;
+        }
+        
+        // Handle OAuth client IDs (mistakenly used as calendar IDs)
+        if (calendarId.Contains(".apps.googleusercontent.com"))
+        {
+            return "Primary Calendar";
+        }
+        
+        // Personal Gmail calendars
+        if (calendarId.Contains("@gmail.com") && !calendarId.Contains("group"))
+        {
+            return calendarId.Split('@')[0];
+        }
+        
+        // Holiday calendars
+        if (calendarId.Contains("#holiday"))
+        {
+            var parts = calendarId.Split('#');
+            if (parts.Length > 0)
+            {
+                // Extract country/region from holiday calendar ID
+                var countryCode = parts[0].Replace("en.", "").Replace("usa", "US");
+                return $"Holidays ({countryCode.ToUpper()})";
+            }
+            return "Holidays";
+        }
+        
+        // Imported calendars
+        if (calendarId.Contains("@import.calendar.google.com"))
+        {
+            return "Imported Calendar";
+        }
+        
+        // Shared/Group calendars
+        if (calendarId.Contains("@group.calendar.google.com"))
+        {
+            return "Shared Calendar";
+        }
+        
+        // Fallback: return the ID as-is
+        return calendarId;
+    }
+
+    private async Task ToggleCalendarVisibility(string calendarId, bool isVisible)
+    {
+        if (calendarPreferences.Calendars.TryGetValue(calendarId, out var settings))
+        {
+            settings.IsVisible = isVisible;
+            await SavePreferencesAsync();
+            FilterEvents();
+        }
+    }
+
+    private async Task UpdateCalendarColor(string calendarId, string color)
+    {
+        if (calendarPreferences.Calendars.TryGetValue(calendarId, out var settings))
+        {
+            settings.Color = color;
+            await SavePreferencesAsync();
+            ApplyEventColors();
+            FilterEvents();
+        }
+    }
+
+    private void ApplyEventColors()
+    {
+        foreach (var evt in events)
+        {
+            if (calendarPreferences.Calendars.TryGetValue(evt.CalendarId, out var settings))
+            {
+                evt.Color = settings.Color;
+            }
+        }
+    }
+
+    private void FilterEvents()
+    {
+        filteredEvents = events
+            .Where(e => calendarPreferences.Calendars.TryGetValue(e.CalendarId, out var settings) && settings.IsVisible)
+            .ToList();
+        StateHasChanged();
+    }
+
+    private async void HandleAuthStateChanged()
+    {
+        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        
+        if (isAuthenticated)
+        {
+            await LoadEvents();
+        }
+        else
+        {
+            events.Clear();
+            filteredEvents.Clear();
+        }
+        
+        StateHasChanged();
+    }
+
+    private async Task SignIn()
+    {
+        await AuthService.InitiateAuthFlowAsync();
+    }
+
+    private async Task SignOut()
+    {
+        await AuthService.SignOutAsync();
+    }
+
+    private async Task LoadEvents()
+    {
+        await LoadEvents(showLoadingState: true);
+    }
+
+    private async Task LoadEvents(bool showLoadingState = true)
+    {
+        if (showLoadingState)
+        {
+            isLoading = true;
+            StateHasChanged();
+        }
+
+        var (start, end) = GetDateRange();
+        events = await CalendarService.GetEventsAsync(start, end);
+        
+        ApplyEventColors();
+        FilterEvents();
+
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private (DateTime start, DateTime end) GetDateRange()
+    {
+        return ViewType switch
+        {
+            CalendarViewType.Day => (currentDate.Date, currentDate.Date.AddDays(1).AddSeconds(-1)),
+            CalendarViewType.Week => (GetWeekStart(), GetWeekStart().AddDays(7).AddSeconds(-1)),
+            CalendarViewType.Month => (new DateTime(currentDate.Year, currentDate.Month, 1), 
+                                       new DateTime(currentDate.Year, currentDate.Month, 1).AddMonths(1).AddSeconds(-1)),
+            _ => (currentDate, currentDate.AddDays(1))
+        };
+    }
+
+    private DateTime GetWeekStart()
+    {
+        var diff = (7 + (currentDate.DayOfWeek - (WeekStart == WeekStartDay.Sunday ? DayOfWeek.Sunday : DayOfWeek.Monday))) % 7;
+        return currentDate.AddDays(-diff).Date;
+    }
+
+    private string GetPeriodDisplay()
+    {
+        return ViewType switch
+        {
+            CalendarViewType.Day => currentDate.ToString("MMMM d, yyyy"),
+            CalendarViewType.Week => $"{GetWeekStart():MMM d} - {GetWeekStart().AddDays(6):MMM d, yyyy}",
+            CalendarViewType.Month => currentDate.ToString("MMMM yyyy"),
+            _ => currentDate.ToString("MMMM yyyy")
+        };
+    }
+
+    private async Task ChangeView(CalendarViewType newView)
+    {
+        ViewType = newView;
+        await SaveViewStateAsync();
+        await LoadEvents();
+    }
+
+    private async Task ChangeWeekStart(WeekStartDay newStart)
+    {
+        WeekStart = newStart;
+        await SaveViewStateAsync();
+        await LoadEvents();
+    }
+
+    private async Task PreviousPeriod()
+    {
+        currentDate = ViewType switch
+        {
+            CalendarViewType.Day => currentDate.AddDays(-1),
+            CalendarViewType.Week => currentDate.AddDays(-7),
+            CalendarViewType.Month => currentDate.AddMonths(-1),
+            _ => currentDate
+        };
+        await SaveViewStateAsync();
+        await LoadEvents();
+    }
+
+    private async Task NextPeriod()
+    {
+        currentDate = ViewType switch
+        {
+            CalendarViewType.Day => currentDate.AddDays(1),
+            CalendarViewType.Week => currentDate.AddDays(7),
+            CalendarViewType.Month => currentDate.AddMonths(1),
+            _ => currentDate
+        };
+        await SaveViewStateAsync();
+        await LoadEvents();
+    }
+
+    private async Task Today()
+    {
+        currentDate = DateTime.Today;
+        await SaveViewStateAsync();
+        await LoadEvents();
+    }
+
+    private void ShowEventDetails(CalendarEvent calEvent)
+    {
+        selectedEvent = calEvent;
+    }
+
+    private async Task CloseEventDetails()
+    {
+        selectedEvent = null;
+        
+        // Check if we need to refresh after closing modal
+        if (_needsRefreshAfterModalClose)
+        {
+            _needsRefreshAfterModalClose = false;
+            await LoadEvents(showLoadingState: false); // Silent refresh after modal close
+        }
+    }
+
+    private async Task CloseSettings()
+    {
+        showSettings = false;
+        
+        // Check if we need to refresh after closing modal
+        if (_needsRefreshAfterModalClose)
+        {
+            _needsRefreshAfterModalClose = false;
+            await LoadEvents(showLoadingState: false); // Silent refresh after modal close
+        }
+    }
+
+    private string ProcessDescriptionHtml(string html)
+    {
+        if (string.IsNullOrEmpty(html))
+            return html;
+
+        var processed = html;
+
+        // Step 1: Add target="_blank" to existing anchor tags
+        processed = System.Text.RegularExpressions.Regex.Replace(
+            processed,
+            @"<a\s+([^>]*?)>",
+            match =>
+            {
+                var attributes = match.Groups[1].Value;
+                
+                // Check if target attribute already exists
+                if (!attributes.Contains("target=", StringComparison.OrdinalIgnoreCase))
+                {
+                    // Add target="_blank" and rel for security
+                    return $"<a {attributes} target=\"_blank\" rel=\"noopener noreferrer\">";
+                }
+                
+                return match.Value;
+            },
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase
+        );
+
+        // Step 2: Convert plain text URLs to anchor tags (but not URLs already in HTML attributes)
+        // This regex uses negative lookbehind to avoid matching URLs that are already in href, src, etc.
+        processed = System.Text.RegularExpressions.Regex.Replace(
+            processed,
+            @"(?<!(href|src)=[""'])(https?://[^\s<>""']+)(?![""'])",
+            match =>
+            {
+                var url = match.Value;
+                // Make sure we're not inside an HTML tag
+                var beforeMatch = processed.Substring(0, match.Index);
+                var lastOpenTag = beforeMatch.LastIndexOf('<');
+                var lastCloseTag = beforeMatch.LastIndexOf('>');
+                
+                // If we're inside a tag (< came after >), don't replace
+                if (lastOpenTag > lastCloseTag)
+                {
+                    return match.Value;
+                }
+                
+                return $"<a href=\"{url}\" target=\"_blank\" rel=\"noopener noreferrer\">{url}</a>";
+            },
+            System.Text.RegularExpressions.RegexOptions.IgnoreCase
+        );
+
+        return processed;
+    }
+
+    public void Dispose()
+    {
+        AuthService.OnAuthStateChanged -= HandleAuthStateChanged;
+        _refreshTimer?.Dispose();
+    }
+
+    private class CalendarViewState
+    {
+        public CalendarViewType ViewType { get; set; }
+        public WeekStartDay WeekStart { get; set; }
+        public DateTime? CurrentDate { get; set; }
+    }
+}
+
+<style>
+    .calendar-container {
+        padding: 1rem;
+        color: var(--bs-body-color);
+        width: 100%;
+        max-width: 100%;
+        overflow: hidden;
+    }
+
+    .calendar-body {
+        max-height: 700px;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .auth-required {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    .auth-message {
+        margin-top: 2rem;
+    }
+
+    .auth-message p {
+        margin-bottom: 1.5rem;
+        color: var(--bs-body-color, #666);
+        opacity: 0.8;
+    }
+
+    .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1.5rem;
+        background: #4285f4;
+        color: #ffffff;
+        border: 2px solid #4285f4;
+        border-radius: 4px;
+        font-size: 1rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-primary:hover {
+        background: #357ae8;
+        border-color: #357ae8;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .google-icon {
+        background: white;
+        color: #4285f4;
+        width: 24px;
+        height: 24px;
+        border-radius: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 16px;
+    }
+
+    .calendar-header {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .header-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+    }
+
+    .btn-settings {
+        background: var(--bs-secondary-bg);
+        border: 1px solid var(--bs-border-color);
+        color: var(--bs-body-color);
+        padding: 0.25rem 0.5rem;
+        font-size: 1.2rem;
+        transition: all 0.2s;
+    }
+
+    .btn-settings:hover {
+        background: var(--bs-tertiary-bg);
+        transform: scale(1.1);
+    }
+
+    .btn-link {
+        background: none;
+        border: none;
+        color: var(--bs-link-color, #007bff);
+        cursor: pointer;
+        padding: 0.25rem 0.5rem;
+        text-decoration: underline;
+    }
+
+    .btn-link:hover {
+        color: var(--bs-link-hover-color, #0056b3);
+    }
+
+    .calendar-controls-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .calendar-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .current-period {
+        font-weight: bold;
+        min-width: 200px;
+        text-align: center;
+        color: var(--bs-body-color);
+    }
+
+    .view-selector {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .btn {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--bs-border-color, #ddd);
+        background: var(--bs-body-bg, white);
+        color: var(--bs-body-color);
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all 0.2s;
+    }
+
+    .btn:hover {
+        background: var(--bs-secondary-bg, #f0f0f0);
+    }
+
+    .btn.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+
+    .settings-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        animation: fadeIn 0.2s;
+    }
+
+    .settings-content {
+        background: var(--bs-body-bg, white);
+        color: var(--bs-body-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s;
+    }
+
+    .settings-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid var(--bs-border-color);
+        padding-bottom: 0.5rem;
+    }
+
+    .settings-header h4 {
+        margin: 0;
+        color: var(--bs-body-color);
+    }
+
+    .settings-body h5 {
+        margin-top: 1rem;
+        margin-bottom: 0.75rem;
+        color: var(--bs-body-color);
+        font-size: 1.1rem;
+    }
+
+    .settings-body h5:first-child {
+        margin-top: 0;
+    }
+
+    .week-start-setting {
+        display: flex;
+        gap: 1.5rem;
+        margin-bottom: 1.5rem;
+        padding: 0.75rem;
+        background: var(--bs-secondary-bg);
+        border-radius: 6px;
+        border: 1px solid var(--bs-border-color);
+    }
+
+    .radio-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        font-weight: 500;
+        color: var(--bs-body-color);
+        transition: all 0.2s;
+    }
+
+    .radio-label:hover {
+        color: var(--bs-emphasis-color);
+    }
+
+    .radio-label input[type="radio"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+
+    .radio-label span {
+        user-select: none;
+    }
+
+    .calendar-setting-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: var(--bs-secondary-bg);
+        border-radius: 6px;
+        border: 1px solid var(--bs-border-color);
+        transition: all 0.2s;
+    }
+
+    .calendar-setting-item:hover {
+        background: var(--bs-tertiary-bg);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .calendar-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .calendar-info input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .color-picker {
+        width: 40px;
+        height: 40px;
+        border: 2px solid var(--bs-border-color);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .color-picker:hover {
+        transform: scale(1.1);
+    }
+
+    .calendar-name {
+        flex: 1;
+        font-weight: 500;
+        color: var(--bs-body-color);
+    }
+
+    .settings-actions {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--bs-border-color);
+        text-align: center;
+    }
+
+    .btn-danger {
+        background: #dc3545;
+        color: white;
+        border: 1px solid #dc3545;
+        padding: 0.5rem 1.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+    }
+
+    .btn-danger:hover {
+        background: #c82333;
+        border-color: #bd2130;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        cursor: pointer;
+        padding: 0;
+        width: 30px;
+        height: 30px;
+        line-height: 1;
+        color: var(--bs-body-color);
+        transition: transform 0.2s;
+    }
+
+    .close-btn:hover {
+        transform: rotate(90deg);
+        color: #dc3545;
+    }
+
+    .event-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 3000;
+        animation: fadeIn 0.2s;
+    }
+
+    .event-modal-content {
+        background: var(--bs-body-bg, white);
+        color: var(--bs-body-color);
+        border-radius: 8px;
+        padding: 1.5rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        animation: slideUp 0.3s;
+    }
+
+    .event-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid var(--bs-border-color);
+        padding-bottom: 0.5rem;
+    }
+
+    .event-modal-header h4 {
+        margin: 0;
+        color: var(--bs-body-color);
+    }
+
+    .event-detail {
+        margin-bottom: 1rem;
+        color: var(--bs-body-color);
+    }
+
+    .event-detail strong {
+        color: var(--bs-emphasis-color);
+    }
+
+    .calendar-badge {
+        display: inline-block;
+        font-weight: 500;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .event-description {
+        margin-top: 0.5rem;
+        white-space: pre-wrap;
+        padding: 0.75rem;
+        background: var(--bs-secondary-bg);
+        border-radius: 4px;
+        border-left: 3px solid #007bff;
+        line-height: 1.6;
+    }
+
+    .event-description a {
+        color: #4a9eff;
+        text-decoration: underline;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+
+    .event-description a:hover {
+        color: #2180ff;
+        text-decoration: none;
+    }
+
+    .event-description a:visited {
+        color: #8b7fff;
+    }
+
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+        }
+        to {
+            opacity: 1;
+        }
+    }
+
+    @@keyframes slideUp {
+        from {
+            transform: translateY(20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>

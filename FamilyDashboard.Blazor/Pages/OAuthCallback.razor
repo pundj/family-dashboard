@@ -1,0 +1,65 @@
+@page "/oauth-callback"
+@using FamilyDashboard.Blazor.Services
+@inject IGoogleAuthService AuthService
+@inject NavigationManager NavigationManager
+
+<div class="callback-container">
+    <h3>Completing Sign In...</h3>
+    <p>@message</p>
+</div>
+
+@code {
+    private string message = "Processing authentication...";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        
+        var code = query["code"];
+        var error = query["error"];
+
+        if (!string.IsNullOrEmpty(error))
+        {
+            message = $"Authentication failed: {error}";
+            await Task.Delay(2000);
+            NavigationManager.NavigateTo("/", true);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(code))
+        {
+            var success = await AuthService.HandleAuthCallbackAsync(code);
+            
+            if (success)
+            {
+                message = "Authentication successful! Redirecting...";
+                await Task.Delay(1000);
+                NavigationManager.NavigateTo("/", true);
+            }
+            else
+            {
+                message = "Authentication failed. Redirecting...";
+                await Task.Delay(2000);
+                NavigationManager.NavigateTo("/", true);
+            }
+        }
+        else
+        {
+            message = "No authentication code received. Redirecting...";
+            await Task.Delay(2000);
+            NavigationManager.NavigateTo("/", true);
+        }
+    }
+}
+
+<style>
+    .callback-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 50vh;
+        text-align: center;
+    }
+</style>

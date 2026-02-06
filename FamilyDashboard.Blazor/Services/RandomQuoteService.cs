@@ -6,8 +6,9 @@ public class RandomQuoteService : IRandomQuoteService
 {
     private readonly HttpClient _httpClient;
 
-    public RandomQuoteService(IHttpClientFactory httpClientFactory) => _httpClient = httpClientFactory.CreateClient("Quote");
+    public RandomQuoteService(HttpClient httpClient) => _httpClient = httpClient;
 
     public async Task<GetRandomQuoteResponse> GetQuoteAsync() =>
-        (await _httpClient.GetFromJsonAsync<GetRandomQuoteResponse[]>("https://api.quotable.io/quotes/random"))?.FirstOrDefault() ?? new();
+        (await _httpClient.GetFromJsonAsync<GetRandomQuoteResponse[]>("https://bible-api.com/data/dra/random"))?.FirstOrDefault() ?? new();
 }
+

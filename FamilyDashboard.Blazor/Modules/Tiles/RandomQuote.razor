@@ -5,26 +5,36 @@
 {
     <p class="m-0">@_errorMessage</p>
 }
-else if (_content == null)
+else if (_response == null)
 {
     <p>Loading a random quote...</p>
 }
-else
+else if (_response.Content == null && _response.RandomVerse?.Text != null)
+{
+    <figure @onclick="async () => await FetchQuoteTextAsync()">
+        <blockquote class="blockquote">
+            <p>@_response.RandomVerse?.Text</p>
+        </blockquote>
+        <figcaption class="blockquote-footer">
+            @_response.RandomVerse?.Book @_response.RandomVerse?.Chapter:@_response.RandomVerse?.Verse
+        </figcaption>
+    </figure>
+}
+else if (_response.Content != null)
 {
     <figure @onclick="async () => await FetchQuoteTextAsync()">
       <blockquote class="blockquote">
-        <p>@_content</p>
+        <p>@_response.Content</p>
       </blockquote>
       <figcaption class="blockquote-footer">
-        @_author
+        @_response.Author
       </figcaption>
     </figure>
 }
 
 @code {
     private string? _errorMessage;
-    private string? _content;
-    private string? _author;
+    private GetRandomQuoteResponse? _response;
     private Timer? _timer;
 
     protected override async Task OnInitializedAsync()
@@ -42,15 +52,7 @@ else
     {
         try
         {
-            _content = null;
-            var getRandomQuoteResponse = await RandomQuoteService.GetQuoteAsync();
-            if (getRandomQuoteResponse == null)
-            {
-                _content = "";
-                return;
-            }
-            _content = getRandomQuoteResponse.Content;
-            _author = getRandomQuoteResponse.Author;
+            _response = await RandomQuoteService.GetQuoteAsync();
             StateHasChanged();
         }
         catch

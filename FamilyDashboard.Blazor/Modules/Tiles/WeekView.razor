@@ -1,0 +1,218 @@
+@using FamilyDashboard.Blazor.Models.Calendar
+
+<div class="week-view">
+    <div class="week-grid">
+        @for (int i = 0; i < 7; i++)
+        {
+            var day = StartDate.AddDays(i);
+            var dayEvents = Events.Where(e => e.StartTime.Date == day.Date).OrderBy(e => e.StartTime).ToList();
+            var isToday = day.Date == DateTime.Today;
+            var hasTimedEvents = dayEvents.Any(e => !e.IsAllDay);
+            
+            <div class="week-day @(isToday ? "today" : "")">
+                <div class="week-day-header">
+                    <div class="day-name">@day.ToString("ddd")</div>
+                    <div class="day-number">@day.Day</div>
+                </div>
+                <div class="week-day-events">
+                    @if (isToday && hasTimedEvents)
+                    {
+                        var now = DateTime.Now;
+                        var indicatorInserted = false;
+                        
+                        @foreach (var evt in dayEvents)
+                        {
+                            // Insert time indicator before events that start after current time
+                            if (!indicatorInserted && !evt.IsAllDay && evt.StartTime > now)
+                            {
+                                <div class="current-time-indicator-week">
+                                    <span class="time-label-week">@now.ToString("h:mm tt")</span>
+                                </div>
+                                indicatorInserted = true;
+                            }
+                            
+                            <div class="week-event" @onclick="() => OnEventClick.InvokeAsync(evt)" 
+                                 style="background: @evt.Color; border-left: 4px solid @evt.Color; filter: brightness(1.1);"
+                                 title="@evt.Title @(!string.IsNullOrEmpty(evt.Location) ? $" - {evt.Location}" : "")">
+                                @if (!evt.IsAllDay)
+                                {
+                                    <span class="event-time-badge">@evt.StartTime.ToString("h:mm tt")</span>
+                                }
+                                <span class="event-title-short">@evt.Title</span>
+                            </div>
+                        }
+                        
+                        @* If indicator wasn't inserted (current time is after all events), show it at the end *@
+                        @if (!indicatorInserted)
+                        {
+                            <div class="current-time-indicator-week">
+                                <span class="time-label-week">@now.ToString("h:mm tt")</span>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        @foreach (var evt in dayEvents)
+                        {
+                            <div class="week-event" @onclick="() => OnEventClick.InvokeAsync(evt)" 
+                                 style="background: @evt.Color; border-left: 4px solid @evt.Color; filter: brightness(1.1);"
+                                 title="@evt.Title @(!string.IsNullOrEmpty(evt.Location) ? $" - {evt.Location}" : "")">
+                                @if (!evt.IsAllDay)
+                                {
+                                    <span class="event-time-badge">@evt.StartTime.ToString("h:mm tt")</span>
+                                }
+                                <span class="event-title-short">@evt.Title</span>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .week-view {
+        padding: 1rem;
+    }
+
+    .week-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 1px;
+        background: var(--bs-border-color, #ddd);
+        border: 1px solid var(--bs-border-color, #ddd);
+        width: 100%;
+    }
+
+    .week-day {
+        background: var(--bs-body-bg, white);
+        color: var(--bs-body-color);
+        min-height: 150px;
+        max-height: 400px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .week-day.today {
+        background: var(--bs-primary-bg-subtle);
+        box-shadow: inset 0 0 0 2px var(--bs-primary);
+    }
+
+    .week-day-header {
+        padding: 0.5rem;
+        text-align: center;
+        border-bottom: 2px solid var(--bs-border-color);
+        background: var(--bs-secondary-bg, #f8f9fa);
+        color: var(--bs-body-color);
+    }
+
+    .week-day.today .week-day-header {
+        background: var(--bs-primary, #007bff);
+        color: white;
+    }
+
+    .day-name {
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .day-number {
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    .week-day-events {
+        padding: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        overflow-y: auto;
+    }
+
+    .week-event {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        color: white;
+        font-weight: 500;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+        overflow: hidden;
+        max-width: 100%;
+    }
+
+    .week-event:hover {
+        filter: brightness(0.9) !important;
+        transform: translateX(2px) scale(1.02);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .event-time-badge {
+        display: block;
+        font-size: 0.7rem;
+        opacity: 0.9;
+        font-weight: 600;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .event-title-short {
+        display: block;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+    }
+
+    .current-time-indicator-week {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        margin-top: 0.5rem;
+        position: relative;
+    }
+
+    .current-time-indicator-week::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 50%;
+        height: 2px;
+        background: #dc3545;
+        z-index: 0;
+    }
+
+    .time-label-week {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: white;
+        background: #dc3545;
+        padding: 2px 6px;
+        border-radius: 3px;
+        white-space: nowrap;
+        position: relative;
+        z-index: 1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+</style>
+
+@code {
+    [Parameter]
+    public List<CalendarEvent> Events { get; set; } = new();
+
+    [Parameter]
+    public DateTime StartDate { get; set; }
+
+    [Parameter]
+    public WeekStartDay WeekStart { get; set; }
+
+    [Parameter]
+    public EventCallback<CalendarEvent> OnEventClick { get; set; }
+}
