@@ -188,8 +188,8 @@ Click **"OK"** to close the modal.
   "FamilyName": "Smith",
   "Locale": "New York",
   "GoogleOAuth": {
-    "ClientId": "YOUR CLIENT ID (ends with apps.googleusercontent.com)",
-    "ClientSecret": "YOUR CLIENT SECRET (starts with GOCSPX)",
+    "ClientId": "YOUR CLIENT ID",
+    "ClientSecret": "YOUR CLIENT SECRET",
     "RedirectUri": "https://localhost:7104/oauth-callback",
     "CalendarIds": [
       "john.smith@gmail.com",
