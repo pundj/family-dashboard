@@ -64,8 +64,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _showSmartThingsTab = Configuration != null && Configuration.GetValue<string>("SmartThingsApiBaseAddress") != null &&
-            Configuration.GetValue<string>("SmartThingsApiAccessToken") != null;
+        _showSmartThingsTab = true;
         _showWeatherTab = Configuration != null && Configuration.GetValue<string>("Locale") != null;
         _showCalendarTab = Configuration != null && 
             (Configuration.GetValue<string>("GoogleOAuth:ClientId") != null || 

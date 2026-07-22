@@ -2,57 +2,218 @@
 @inject ISmartHomeService SmartHomeService
 
 <h3 @onclick="async () => await FetchDevicesAsync()">Smart Home</h3>
-@if (_errorMessage != null)
+
+@if (!string.IsNullOrWhiteSpace(_statusMessage))
+{
+    <p class="m-0 text-info">@_statusMessage</p>
+}
+
+@if (!string.IsNullOrWhiteSpace(_errorMessage))
 {
     <p class="m-0 text-danger">@_errorMessage</p>
 }
-else if (_devices == null)
+
+@if (!_status.IsAuthenticated)
 {
-    <p>Loading smart home devices...</p>
-}
-else if (!_devices.Any())
-{
-    <p>No smart home devices to display.</p>
+    <div class="card p-3 mb-3">
+        <p class="mb-2">Sign in to configure your personal SmartThings token.</p>
+        <div class="row g-2">
+            <div class="col-md-4">
+                <input class="form-control" placeholder="Username" @bind="_userName" />
+            </div>
+            <div class="col-md-4">
+                <input class="form-control" placeholder="Password" type="password" @bind="_password" />
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button class="btn btn-primary" @onclick="LoginAsync">Sign In</button>
+                <button class="btn btn-secondary" @onclick="RegisterAsync">Register</button>
+            </div>
+        </div>
+    </div>
 }
 else
 {
-    <div class="d-flex flex-wrap justify-content-between">
-        @foreach (var device in _devices)
+    <div class="card p-3 mb-3">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <div>
+                <strong>Signed in:</strong> @_status.UserName
+            </div>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="SignOutAsync">Sign Out</button>
+        </div>
+
+        <p class="mb-2">
+            Token configured: <strong>@(_status.HasToken ? "Yes" : "No")</strong>
+            @if (_status.HasToken)
+            {
+                <span class="ms-2">Valid: <strong>@(_status.IsTokenValid ? "Yes" : "No")</strong></span>
+            }
+        </p>
+
+        <div class="row g-2 mb-2">
+            <div class="col-md-8">
+                <input class="form-control" placeholder="SmartThings personal access token" type="password" @bind="_tokenInput" />
+            </div>
+            <div class="col-md-4 d-flex gap-2">
+                <button class="btn btn-primary" @onclick="SaveTokenAsync">Save / Replace Token</button>
+                <button class="btn btn-outline-primary" @onclick="RefreshStatusAsync">Validate</button>
+            </div>
+        </div>
+
+        @if (_status.HasToken)
         {
-            <SmartHomeTile Device="@device" />
+            <button class="btn btn-outline-danger btn-sm" @onclick="RemoveTokenAsync">Remove Token</button>
         }
     </div>
+
+    @if (_status.HasToken && _status.IsTokenValid)
+    {
+        if (_devices == null)
+        {
+            <p>Loading smart home devices...</p>
+        }
+        else if (!_devices.Any())
+        {
+            <p>No smart home devices to display.</p>
+        }
+        else
+        {
+            <div class="d-flex flex-wrap justify-content-between">
+                @foreach (var device in _devices)
+                {
+                    <SmartHomeTile Device="@device" />
+                }
+            </div>
+        }
+    }
 }
 
 @code {
     private string? _errorMessage;
+    private string? _statusMessage;
     private IEnumerable<SmartThingsDeviceViewModel>? _devices;
     private Timer? _timer;
+    private SmartHomeUserStatus _status = new();
+    private string _userName = string.Empty;
+    private string _password = string.Empty;
+    private string _tokenInput = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         _timer = new System.Threading.Timer(async _ =>
         {
-            await FetchDevicesAsync();
+            await RefreshStatusAndDevicesAsync();
             await InvokeAsync(StateHasChanged);
         }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
 
         await base.OnInitializedAsync();
     }
 
+    private async Task RegisterAsync()
+    {
+        await RunActionAsync(async () =>
+        {
+            var result = await SmartHomeService.RegisterAsync(_userName, _password);
+            if (!result.Succeeded)
+                throw new InvalidOperationException(result.Message ?? "Registration failed.");
+
+            _statusMessage = "Registration successful.";
+            _password = string.Empty;
+            await RefreshStatusAndDevicesAsync();
+        });
+    }
+
+    private async Task LoginAsync()
+    {
+        await RunActionAsync(async () =>
+        {
+            var result = await SmartHomeService.LoginAsync(_userName, _password);
+            if (!result.Succeeded)
+                throw new InvalidOperationException(result.Message ?? "Sign in failed.");
+
+            _statusMessage = "Sign in successful.";
+            _password = string.Empty;
+            await RefreshStatusAndDevicesAsync();
+        });
+    }
+
+    private async Task SignOutAsync()
+    {
+        await RunActionAsync(async () =>
+        {
+            await SmartHomeService.LogoutAsync();
+            _status = new SmartHomeUserStatus();
+            _devices = null;
+            _statusMessage = "Signed out.";
+        });
+    }
+
+    private async Task SaveTokenAsync()
+    {
+        await RunActionAsync(async () =>
+        {
+            var result = await SmartHomeService.SaveTokenAsync(_tokenInput);
+            if (!result.Succeeded)
+                throw new InvalidOperationException(result.Message ?? "Unable to save token.");
+
+            _tokenInput = string.Empty;
+            _statusMessage = "Token saved successfully.";
+            await RefreshStatusAndDevicesAsync();
+        });
+    }
+
+    private async Task RemoveTokenAsync()
+    {
+        await RunActionAsync(async () =>
+        {
+            await SmartHomeService.RemoveTokenAsync();
+            _statusMessage = "Token removed.";
+            _devices = null;
+            await RefreshStatusAsync();
+        });
+    }
+
+    private async Task RefreshStatusAsync()
+    {
+        _status = await SmartHomeService.GetUserStatusAsync();
+    }
+
+    private async Task RefreshStatusAndDevicesAsync()
+    {
+        await RefreshStatusAsync();
+
+        if (_status.IsAuthenticated && _status.HasToken && _status.IsTokenValid)
+            await FetchDevicesAsync();
+        else
+            _devices = null;
+    }
+
     async Task FetchDevicesAsync()
     {
-        try
+        await RunActionAsync(async () =>
         {
+            if (!_status.IsAuthenticated || !_status.HasToken || !_status.IsTokenValid)
+            {
+                _devices = null;
+                return;
+            }
+
             _devices = null;
             var getDevicesResponse = await SmartHomeService.GetDevicesAsync();
-            if (getDevicesResponse == null)
-                return;
-            _devices = getDevicesResponse.Items;
-        }
-        catch
+            _devices = getDevicesResponse?.Items ?? new List<SmartThingsDeviceViewModel>();
+        });
+    }
+
+    private async Task RunActionAsync(Func<Task> action)
+    {
+        _errorMessage = null;
+
+        try
         {
-            _errorMessage = "Unable to retrieve smart home devices.";
+            await action();
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
         }
     }
 }
