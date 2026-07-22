@@ -161,7 +161,7 @@ public class SmartThingsProxyService : ISmartThingsProxyService
             {
                 DeviceId = deviceId.GetString(),
                 Label = label.GetString(),
-                Type = Enum.Parse<SmartHomeDeviceType>(deviceType.GetString() ?? string.Empty, ignoreCase: true)
+                Type = TryParseDeviceType(deviceType.GetString())
             };
 
             responseItems.Add(deviceResponse);
@@ -199,7 +199,7 @@ public class SmartThingsProxyService : ISmartThingsProxyService
             var category = categories.EnumerateArray().FirstOrDefault();
             if (!category.TryGetProperty("name", out var deviceType))
                 throw new ArgumentException("Json response does not have expected field \"name\" under \"categories\"", nameof(json));
-            response.Type = Enum.Parse<SmartHomeDeviceType>(deviceType.GetString() ?? string.Empty, ignoreCase: true);
+            response.Type = TryParseDeviceType(deviceType.GetString());
         }
 
         if (response.Label is null)
@@ -343,6 +343,14 @@ public class SmartThingsProxyService : ISmartThingsProxyService
         }
 
         return response;
+    }
+
+
+    private static SmartHomeDeviceType TryParseDeviceType(string? value)
+    {
+        return Enum.TryParse<SmartHomeDeviceType>(value, ignoreCase: true, out var parsed)
+            ? parsed
+            : SmartHomeDeviceType.Unknown;
     }
 
     private static void GetDeviceOnlineStateFromJsonResponseBody(string json, SmartThingsDeviceViewModel response)

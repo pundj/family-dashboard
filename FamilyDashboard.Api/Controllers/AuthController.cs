@@ -41,7 +41,7 @@ public class AuthController : ControllerBase
         var user = new IdentityUser
         {
             UserName = normalizedUsername,
-            Email = $"{normalizedUsername}@local.familydashboard"
+            Email = $"{normalizedUsername}@example.com"
         };
 
         var createResult = await _userManager.CreateAsync(user, request.Password);
