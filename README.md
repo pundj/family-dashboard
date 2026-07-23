@@ -52,6 +52,22 @@ The application will be available at:
 - **HTTPS**: https://localhost:7104
 - **HTTP**: http://localhost:5298
 
+### Run with .NET Aspire (recommended for local development)
+
+```bash
+dotnet run --project FamilyDashboard.AppHost/FamilyDashboard.AppHost.csproj
+```
+
+Aspire AppHost orchestrates the API host and provides the local Aspire dashboard for service health and logs.
+
+### Run with Docker
+
+```bash
+docker compose up --build
+```
+
+The app will be available at http://localhost:7104 and persists API data in `FamilyDashboard.Api/App_Data`.
+
 ## Features
 
 - **Dashboard Interface** - Tabbed interface for different information types
@@ -75,6 +91,8 @@ The application uses configuration files for non-secret settings and server-side
 family-dashboard/
 ??? FamilyDashboard.Api/             # ASP.NET Core host + API + auth + SmartThings proxy
 ??? FamilyDashboard.Blazor/          # Blazor WebAssembly client project
+??? FamilyDashboard.AppHost/         # Aspire orchestration host for local development
+??? FamilyDashboard.ServiceDefaults/ # Shared Aspire defaults (telemetry, health checks, resilience)
 ?   ??? Pages/                        # Razor pages/components
 ?   ??? Modules/                      # Feature modules
 ?   ?   ??? Tiles/                    # Dashboard tile components
@@ -135,6 +153,8 @@ This repository now supports a single deployable app (`FamilyDashboard.Api`) sui
 2. Persist app data and data-protection keys using durable storage in production (for example, Azure SQL/Azure Blob + Key Vault) instead of local file storage.
 3. Keep SmartThings tokens server-side only; no token values are required in `FamilyDashboard.Blazor/wwwroot/appsettings.json`.
 4. Ensure HTTPS is enabled (required for secure auth cookies).
+
+For container-based Azure hosting, build from `FamilyDashboard.Api/Dockerfile` and deploy the image to Azure Container Apps or Azure App Service for Containers.
 
 ## Browser Support
 

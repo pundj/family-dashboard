@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\FamilyDashboard.Blazor\FamilyDashboard.Blazor.csproj" />
+    <ProjectReference Include="..\FamilyDashboard.ServiceDefaults\FamilyDashboard.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>
