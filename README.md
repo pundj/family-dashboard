@@ -125,7 +125,7 @@ dotnet test
 - Each signed-in user can save/replace/remove their own SmartThings personal access token from the Smart Home tab.
 - Tokens are stored server-side in SQLite (`FamilyDashboard.Api/App_Data/familydashboard.db`) and encrypted using ASP.NET Core Data Protection before persistence.
 - The browser never reads stored SmartThings tokens after submission.
-- SmartThings device reads and commands are proxied through authenticated backend endpoints (`/api/me/smarthings/*`).
+- SmartThings device reads and commands are proxied through authenticated backend endpoints (`/api/me/smartthings/*`).
 
 ## Azure App Service Deployment Notes
 

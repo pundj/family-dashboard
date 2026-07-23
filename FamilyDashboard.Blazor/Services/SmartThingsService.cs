@@ -19,7 +19,7 @@ public class SmartThingsService : ISmartHomeService
         if (authStatus?.IsAuthenticated != true)
             return new SmartHomeUserStatus();
 
-        var tokenStatus = await _httpClient.GetFromJsonAsync<SmartThingsStatusResponse>("api/me/smarthings/status");
+        var tokenStatus = await _httpClient.GetFromJsonAsync<SmartThingsStatusResponse>("api/me/smartthings/status");
 
         return new SmartHomeUserStatus
         {
@@ -47,7 +47,7 @@ public class SmartThingsService : ISmartHomeService
 
     public async Task<AuthActionResult> SaveTokenAsync(string token)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/me/smarthings/token", new SmartThingsTokenRequest(token));
+        var response = await _httpClient.PostAsJsonAsync("api/me/smartthings/token", new SmartThingsTokenRequest(token));
         if (response.IsSuccessStatusCode)
             return new AuthActionResult { Succeeded = true };
 
@@ -59,12 +59,12 @@ public class SmartThingsService : ISmartHomeService
 
     public async Task RemoveTokenAsync()
     {
-        await _httpClient.DeleteAsync("api/me/smarthings/token");
+        await _httpClient.DeleteAsync("api/me/smartthings/token");
     }
 
     public async Task<GetSmartHomeDevicesResponse?> GetDevicesAsync()
     {
-        return await _httpClient.GetFromJsonAsync<GetSmartHomeDevicesResponse>("api/me/smarthings/devices");
+        return await _httpClient.GetFromJsonAsync<GetSmartHomeDevicesResponse>("api/me/smartthings/devices");
     }
 
     public async Task<SmartThingsDeviceViewModel?> GetDeviceAsync(string? deviceId)
@@ -72,7 +72,7 @@ public class SmartThingsService : ISmartHomeService
         if (string.IsNullOrWhiteSpace(deviceId))
             throw new ArgumentNullException(nameof(deviceId));
 
-        return await _httpClient.GetFromJsonAsync<SmartThingsDeviceViewModel>($"api/me/smarthings/devices/{deviceId}");
+        return await _httpClient.GetFromJsonAsync<SmartThingsDeviceViewModel>($"api/me/smartthings/devices/{deviceId}");
     }
 
     public async Task SetSwitchAsync(string? deviceId, SmartHomeSwitch switchValue)
@@ -83,7 +83,7 @@ public class SmartThingsService : ISmartHomeService
             throw new ArgumentException("switchValue cannot be Unknown", nameof(switchValue));
 
         var response = await _httpClient.PostAsJsonAsync(
-            $"api/me/smarthings/devices/{deviceId}/switch",
+            $"api/me/smartthings/devices/{deviceId}/switch",
             new SetSwitchRequest(switchValue));
 
         response.EnsureSuccessStatusCode();

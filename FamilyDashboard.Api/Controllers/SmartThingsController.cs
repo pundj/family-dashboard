@@ -7,7 +7,7 @@ namespace FamilyDashboard.Api.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/me/smarthings")]
+[Route("api/me/smartthings")]
 public class SmartThingsController : ControllerBase
 {
     private readonly ISmartThingsCredentialStore _credentialStore;
