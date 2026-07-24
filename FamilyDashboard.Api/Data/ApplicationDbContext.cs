@@ -5,14 +5,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace FamilyDashboard.Api.Data;
 
-public class ApplicationDbContext : IdentityDbContext<IdentityUser>
+public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+    : IdentityDbContext<IdentityUser>(options)
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
-    {
-    }
-
     public DbSet<SmartThingsCredential> SmartThingsCredentials => Set<SmartThingsCredential>();
+    public DbSet<CalendarPreferencesEntity> CalendarPreferences => Set<CalendarPreferencesEntity>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -28,6 +25,15 @@ public class ApplicationDbContext : IdentityDbContext<IdentityUser>
                 .WithOne()
                 .HasForeignKey<SmartThingsCredential>(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<CalendarPreferencesEntity>(entity =>
+        {
+            entity.ToTable("CalendarPreferences");
+            entity.HasKey(x => x.PreferenceKey);
+            entity.Property(x => x.PreferenceKey).HasMaxLength(64);
+            entity.Property(x => x.PreferencesJson).IsRequired();
+            entity.Property(x => x.UpdatedUtc).IsRequired();
         });
     }
 }

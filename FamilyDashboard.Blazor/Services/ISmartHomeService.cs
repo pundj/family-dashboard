@@ -19,6 +19,7 @@ public interface ISmartHomeService
 public class SmartHomeUserStatus
 {
     public bool IsAuthenticated { get; set; }
+    public bool IsAuthenticating { get; set; } = true;
     public string? UserName { get; set; }
     public bool HasToken { get; set; }
     public bool IsTokenValid { get; set; }

@@ -4,26 +4,20 @@ using System.Net.Http.Json;
 
 namespace FamilyDashboard.Blazor.Services;
 
-public class SmartThingsService : ISmartHomeService
+public class SmartThingsService(HttpClient httpClient) : ISmartHomeService
 {
-    private readonly HttpClient _httpClient;
-
-    public SmartThingsService(HttpClient httpClient)
-    {
-        _httpClient = httpClient;
-    }
-
     public async Task<SmartHomeUserStatus> GetUserStatusAsync()
     {
-        var authStatus = await _httpClient.GetFromJsonAsync<AuthStatusResponse>("api/auth/status");
+        var authStatus = await httpClient.GetFromJsonAsync<AuthStatusResponse>("api/auth/status");
         if (authStatus?.IsAuthenticated != true)
-            return new SmartHomeUserStatus();
+            return new SmartHomeUserStatus { IsAuthenticating = false };
 
-        var tokenStatus = await _httpClient.GetFromJsonAsync<SmartThingsStatusResponse>("api/me/smartthings/status");
+        var tokenStatus = await httpClient.GetFromJsonAsync<SmartThingsStatusResponse>("api/me/smartthings/status");
 
         return new SmartHomeUserStatus
         {
             IsAuthenticated = true,
+            IsAuthenticating = false,
             UserName = authStatus.UserName,
             HasToken = tokenStatus?.HasToken == true,
             IsTokenValid = tokenStatus?.IsTokenValid == true
@@ -42,12 +36,12 @@ public class SmartThingsService : ISmartHomeService
 
     public async Task LogoutAsync()
     {
-        await _httpClient.PostAsync("api/auth/logout", content: null);
+        await httpClient.PostAsync("api/auth/logout", content: null);
     }
 
     public async Task<AuthActionResult> SaveTokenAsync(string token)
     {
-        var response = await _httpClient.PostAsJsonAsync("api/me/smartthings/token", new SmartThingsTokenRequest(token));
+        var response = await httpClient.PostAsJsonAsync("api/me/smartthings/token", new SmartThingsTokenRequest(token));
         if (response.IsSuccessStatusCode)
             return new AuthActionResult { Succeeded = true };
 
@@ -59,12 +53,12 @@ public class SmartThingsService : ISmartHomeService
 
     public async Task RemoveTokenAsync()
     {
-        await _httpClient.DeleteAsync("api/me/smartthings/token");
+        await httpClient.DeleteAsync("api/me/smartthings/token");
     }
 
     public async Task<GetSmartHomeDevicesResponse?> GetDevicesAsync()
     {
-        return await _httpClient.GetFromJsonAsync<GetSmartHomeDevicesResponse>("api/me/smartthings/devices");
+        return await httpClient.GetFromJsonAsync<GetSmartHomeDevicesResponse>("api/me/smartthings/devices");
     }
 
     public async Task<SmartThingsDeviceViewModel?> GetDeviceAsync(string? deviceId)
@@ -72,7 +66,7 @@ public class SmartThingsService : ISmartHomeService
         if (string.IsNullOrWhiteSpace(deviceId))
             throw new ArgumentNullException(nameof(deviceId));
 
-        return await _httpClient.GetFromJsonAsync<SmartThingsDeviceViewModel>($"api/me/smartthings/devices/{deviceId}");
+        return await httpClient.GetFromJsonAsync<SmartThingsDeviceViewModel>($"api/me/smartthings/devices/{deviceId}");
     }
 
     public async Task SetSwitchAsync(string? deviceId, SmartHomeSwitch switchValue)
@@ -82,16 +76,20 @@ public class SmartThingsService : ISmartHomeService
         if (switchValue == SmartHomeSwitch.Unknown)
             throw new ArgumentException("switchValue cannot be Unknown", nameof(switchValue));
 
-        var response = await _httpClient.PostAsJsonAsync(
+        var response = await httpClient.PostAsJsonAsync(
             $"api/me/smartthings/devices/{deviceId}/switch",
             new SetSwitchRequest(switchValue));
 
-        response.EnsureSuccessStatusCode();
+        if (!response.IsSuccessStatusCode)
+        {
+            var content = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException($"Failed to set switch: {response.StatusCode} - {content}");
+        }
     }
 
     private async Task<AuthActionResult> SendAuthAsync(string uri, AuthRequest request)
     {
-        var response = await _httpClient.PostAsJsonAsync(uri, request);
+        var response = await httpClient.PostAsJsonAsync(uri, request);
         if (response.IsSuccessStatusCode)
             return new AuthActionResult { Succeeded = true };
 

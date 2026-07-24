@@ -56,6 +56,13 @@ using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     dbContext.Database.EnsureCreated();
+
+    dbContext.Database.ExecuteSqlRaw(@"
+        CREATE TABLE IF NOT EXISTS CalendarPreferences (
+            PreferenceKey TEXT NOT NULL CONSTRAINT PK_CalendarPreferences PRIMARY KEY,
+            PreferencesJson TEXT NOT NULL,
+            UpdatedUtc TEXT NOT NULL
+        );");
 }
 
 if (app.Environment.IsDevelopment())

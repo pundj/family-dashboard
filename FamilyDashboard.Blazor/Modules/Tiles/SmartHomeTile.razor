@@ -34,24 +34,11 @@
 @code {
     [Parameter] public SmartThingsDeviceViewModel Device { get; set; } = default!;
     private string? _errorMessage;
-    private Timer? _timer;
-
-    protected override async Task OnInitializedAsync()
-    {
-        _timer = new System.Threading.Timer(async _ =>
-        {
-            await RefreshDeviceAsync();
-            await InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.Zero, TimeSpan.FromMinutes(1));
-
-        await base.OnInitializedAsync();
-    }
 
     async Task ToggleSwitchAsync()
     {
         try
         {
-            if (Device == null) return;
             var newValue = Device.SwitchValue == SmartHomeSwitch.On ? SmartHomeSwitch.Off : SmartHomeSwitch.On;
             await SmartHomeService.SetSwitchAsync(Device.DeviceId, newValue);
             Device.SwitchValue = newValue;
@@ -61,10 +48,5 @@
             Console.WriteLine(ex.Message);
             _errorMessage = "Unable to toggle switch.";
         }
-    }
-
-    async Task RefreshDeviceAsync()
-    {
-        Device = await SmartHomeService.GetDeviceAsync(Device.DeviceId) ?? Device;
     }
 }

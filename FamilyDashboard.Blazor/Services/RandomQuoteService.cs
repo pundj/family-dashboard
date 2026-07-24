@@ -2,13 +2,9 @@
 using System.Net.Http.Json;
 
 namespace FamilyDashboard.Blazor.Services;
-public class RandomQuoteService : IRandomQuoteService
+public class RandomQuoteService(HttpClient httpClient) : IRandomQuoteService
 {
-    private readonly HttpClient _httpClient;
-
-    public RandomQuoteService(HttpClient httpClient) => _httpClient = httpClient;
-
     public async Task<GetRandomQuoteResponse> GetQuoteAsync() =>
-        (await _httpClient.GetFromJsonAsync<GetRandomQuoteResponse[]>("https://bible-api.com/data/dra/random"))?.FirstOrDefault() ?? new();
+        await httpClient.GetFromJsonAsync<GetRandomQuoteResponse>("https://bible-api.com/data/dra/random") ?? new();
 }
 

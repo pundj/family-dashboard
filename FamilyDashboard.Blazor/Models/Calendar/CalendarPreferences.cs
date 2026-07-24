@@ -2,6 +2,7 @@ namespace FamilyDashboard.Blazor.Models.Calendar;
 
 public class CalendarPreferences
 {
+    public WeekStartDay WeekStart { get; set; } = WeekStartDay.Sunday;
     public Dictionary<string, CalendarSettings> Calendars { get; set; } = new();
 }
 

@@ -1,7 +1,14 @@
 @using FamilyDashboard.Blazor.Models.SmartHome;
 @inject ISmartHomeService SmartHomeService
+@implements IDisposable
 
-<h3 @onclick="async () => await FetchDevicesAsync()">Smart Home</h3>
+<div class="d-flex align-items-center gap-2 mb-2">
+    <h3 class="m-0">Smart Home</h3>
+    @if (_status is { IsAuthenticated: true, HasToken: true, IsTokenValid: true })
+    {
+        <button class="btn btn-sm btn-outline-primary" @onclick="RefreshAllAsync">Refresh All</button>
+    }
+</div>
 
 @if (!string.IsNullOrWhiteSpace(_statusMessage))
 {
@@ -13,7 +20,14 @@
     <p class="m-0 text-danger">@_errorMessage</p>
 }
 
-@if (!_status.IsAuthenticated)
+@if (_status.IsAuthenticating)
+{
+    <div class="d-flex align-items-center gap-2 my-2">
+        <div class="spinner-border spinner-border-sm text-info" role="status" aria-hidden="true"></div>
+        <span>Authenticating Smart Home status...</span>
+    </div>
+}
+else if (!_status.IsAuthenticated)
 {
     <div class="card p-3 mb-3">
         <p class="mb-2">Sign in to configure your personal SmartThings token.</p>
@@ -33,38 +47,58 @@
 }
 else
 {
-    <div class="card p-3 mb-3">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <div>
-                <strong>Signed in:</strong> @_status.UserName
-            </div>
-            <button class="btn btn-outline-secondary btn-sm" @onclick="SignOutAsync">Sign Out</button>
-        </div>
-
-        <p class="mb-2">
-            Token configured: <strong>@(_status.HasToken ? "Yes" : "No")</strong>
-            @if (_status.HasToken)
-            {
-                <span class="ms-2">Valid: <strong>@(_status.IsTokenValid ? "Yes" : "No")</strong></span>
-            }
-        </p>
-
-        <div class="row g-2 mb-2">
-            <div class="col-md-8">
-                <input class="form-control" placeholder="SmartThings personal access token" type="password" @bind="_tokenInput" />
-            </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button class="btn btn-primary" @onclick="SaveTokenAsync">Save / Replace Token</button>
-                <button class="btn btn-outline-primary" @onclick="RefreshStatusAsync">Validate</button>
-            </div>
-        </div>
-
-        @if (_status.HasToken)
-        {
-            <button class="btn btn-outline-danger btn-sm" @onclick="RemoveTokenAsync">Remove Token</button>
-        }
+    <!-- Settings gear button -->
+    <div class="mb-3">
+        <button class="btn btn-outline-secondary btn-sm p-2" @onclick="ToggleSettingsAsync" title="Settings">
+            <i class="fa fa-cog"></i>
+        </button>
     </div>
 
+    <!-- Settings panel (collapsible) -->
+    @if (_showSettings)
+    {
+        <div class="card p-3 mb-3 border-secondary">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <strong>Signed in: @_status.UserName</strong>
+                </div>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ToggleSettingsAsync">
+                    <i class="fa fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Token Status -->
+            <p class="mb-2">
+                Token configured: <strong>@(_status.HasToken ? "Yes" : "No")</strong>
+                @if (_status.HasToken)
+                {
+                    <span class="ms-2">Valid: <strong>@(_status.IsTokenValid ? "Yes" : "No")</strong></span>
+                }
+            </p>
+
+            <!-- Token Input -->
+            <div class="row g-2 mb-2">
+                <div class="col-md-8">
+                    <input class="form-control" placeholder="SmartThings personal access token" type="password" @bind="_tokenInput" />
+                </div>
+                <div class="col-md-4 d-flex gap-2">
+                    <button class="btn btn-primary" @onclick="SaveTokenAsync">Save / Replace Token</button>
+                    <button class="btn btn-outline-primary" @onclick="async () => await RefreshStatusAsync()">Validate</button>
+                </div>
+            </div>
+
+            <!-- Remove Token / Sign Out -->
+            <div class="d-flex gap-2">
+                @if (_status.HasToken)
+                {
+                    <button class="btn btn-outline-danger btn-sm" @onclick="RemoveTokenAsync">Remove Token</button>
+                }
+                <button class="btn btn-outline-secondary btn-sm" @onclick="SignOutAsync">Sign Out</button>
+            </div>
+        </div>
+    }
+
+    <!-- Devices list -->
     @if (_status.HasToken && _status.IsTokenValid)
     {
         if (_devices == null)
@@ -96,16 +130,23 @@ else
     private string _userName = string.Empty;
     private string _password = string.Empty;
     private string _tokenInput = string.Empty;
+    private bool _showSettings;
 
     protected override async Task OnInitializedAsync()
     {
-        _timer = new System.Threading.Timer(async _ =>
+        _timer = new Timer(async _ =>
         {
             await RefreshStatusAndDevicesAsync();
             await InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
+        }, null, TimeSpan.Zero, TimeSpan.FromMinutes(15));
 
         await base.OnInitializedAsync();
+    }
+
+    private Task ToggleSettingsAsync()
+    {
+        _showSettings = !_showSettings;
+        return Task.CompletedTask;
     }
 
     private async Task RegisterAsync()
@@ -144,6 +185,7 @@ else
             _status = new SmartHomeUserStatus();
             _devices = null;
             _statusMessage = "Signed out.";
+            _showSettings = false;
         });
     }
 
@@ -172,19 +214,31 @@ else
         });
     }
 
-    private async Task RefreshStatusAsync()
+    private async Task RefreshStatusAsync(bool showAuthenticating = false)
     {
+        if (showAuthenticating)
+        {
+            _status.IsAuthenticating = true;
+        }
+
         _status = await SmartHomeService.GetUserStatusAsync();
     }
 
-    private async Task RefreshStatusAndDevicesAsync()
+    private async Task RefreshStatusAndDevicesAsync(bool showAuthenticating = false)
     {
-        await RefreshStatusAsync();
+        await RefreshStatusAsync(showAuthenticating);
 
-        if (_status.IsAuthenticated && _status.HasToken && _status.IsTokenValid)
+        if (_status is { IsAuthenticated: true, HasToken: true, IsTokenValid: true })
             await FetchDevicesAsync();
         else
             _devices = null;
+    }
+
+    private async Task RefreshAllAsync()
+    {
+        _statusMessage = "Refreshing SmartThings status and devices...";
+        await RefreshStatusAndDevicesAsync(showAuthenticating: false);
+        _statusMessage = "Refreshed.";
     }
 
     async Task FetchDevicesAsync()
@@ -215,5 +269,10 @@ else
         {
             _errorMessage = ex.Message;
         }
+    }
+
+    void IDisposable.Dispose()
+    {
+        _timer?.Dispose();
     }
 }

@@ -1,34 +1,44 @@
 ﻿@page "/"
-@using Microsoft.AspNetCore.Components.Routing
 @inject IConfiguration Configuration
 @inject NavigationManager NavigationManager
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JsRuntime
 @implements IDisposable
 
-<div class="row">
-    <div class="col p-3">
-        <RandomJoke />
-    </div>
-    <div class="col p-3">
-        <RandomQuote />
+<div class="card border-0 bg-transparent my-1">
+    <div class="card-body p-1 d-flex justify-content-end">
+        <button class="btn btn-sm btn-outline-secondary py-0 px-2 me-1" @onclick="ToggleTopTiles" aria-expanded="@_showTopTiles">
+            <span class="me-1">@(_showTopTiles ? "▲" : "▼")</span>
+        </button>
     </div>
 </div>
+
+@if (_showTopTiles)
+{
+    <div class="row g-2 my-1">
+        <div class="col">
+            <RandomJoke />
+        </div>
+        <div class="col">
+            <RandomQuote />
+        </div>
+    </div>
+}
 <div class="d-flex align-items-start">
     <div class="col-1">
         <div class="nav flex-column nav-pills me-3" role="tablist" aria-orientation="vertical">
             @if (_showSmartThingsTab)
             {
-                <button class="nav-link @(activeTab == "smarthome" ? "active" : "")" 
-                        @onclick='() => ChangeTab("smarthome")'>Smart Home</button>
+                <button class="nav-link @(_activeTab == "smart-home" ? "active" : "")" 
+                        @onclick='() => ChangeTab("smart-home")'>Smart Home</button>
             }
             @if (_showWeatherTab)
             {
-                <button class="nav-link @(activeTab == "weather" ? "active" : "")" 
+                <button class="nav-link @(_activeTab == "weather" ? "active" : "")" 
                         @onclick='() => ChangeTab("weather")'>Weather</button>
             }
             @if (_showCalendarTab)
             {
-                <button class="nav-link @(activeTab == "calendar" ? "active" : "")" 
+                <button class="nav-link @(_activeTab == "calendar" ? "active" : "")" 
                         @onclick='() => ChangeTab("calendar")'>Calendar</button>
             }
         </div>
@@ -36,20 +46,29 @@
     <div class="col-11 tab-content ms-2">
         @if (_showSmartThingsTab)
         {
-            <div class="tab-pane fade @(activeTab == "smarthome" ? "show active" : "")">
-                <SmartHome />
+            <div class="tab-pane fade @(_activeTab == "smart-home" ? "show active" : "")">
+                @if (_activeTab == "smart-home")
+                {
+                    <SmartHome />
+                }
             </div>
         }
         @if (_showWeatherTab)
         {
-            <div class="tab-pane fade @(activeTab == "weather" ? "show active" : "")">
-                <WeatherForecast />
+            <div class="tab-pane fade @(_activeTab == "weather" ? "show active" : "")">
+                @if (_activeTab == "weather")
+                {
+                    <WeatherForecast />
+                }
             </div>
         }
         @if (_showCalendarTab)
         {
-            <div class="tab-pane fade @(activeTab == "calendar" ? "show active" : "")">
-                <Calendar />
+            <div class="tab-pane fade @(_activeTab == "calendar" ? "show active" : "")">
+                @if (_activeTab == "calendar")
+                {
+                    <Calendar/>
+                }
             </div>
         }
     </div>
@@ -57,10 +76,11 @@
 
 
 @code {
-    bool _showSmartThingsTab = false;
-    bool _showWeatherTab = false;
-    bool _showCalendarTab = false;
-    string activeTab = "";
+    bool _showSmartThingsTab;
+    bool _showWeatherTab;
+    bool _showCalendarTab;
+    bool _showTopTiles = true;
+    string _activeTab = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -75,7 +95,7 @@
         
         NavigationManager.LocationChanged += OnLocationChanged;
         
-        base.OnInitialized();
+        await base.OnInitializedAsync();
     }
 
     private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
@@ -86,7 +106,7 @@
         
         if (!string.IsNullOrEmpty(tabFromUrl))
         {
-            activeTab = tabFromUrl;
+            _activeTab = tabFromUrl;
             StateHasChanged();
         }
     }
@@ -100,29 +120,29 @@
         
         if (!string.IsNullOrEmpty(tabFromUrl))
         {
-            activeTab = tabFromUrl;
+            _activeTab = tabFromUrl;
         }
         else
         {
             // Load from localStorage
             try
             {
-                var storedTab = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "active_tab");
+                var storedTab = await JsRuntime.InvokeAsync<string>("localStorage.getItem", "active_tab");
                 if (!string.IsNullOrEmpty(storedTab))
                 {
-                    activeTab = storedTab;
+                    _activeTab = storedTab;
                 }
                 else
                 {
                     // Default to first available tab
-                    activeTab = _showSmartThingsTab ? "smarthome" : 
+                    _activeTab = _showSmartThingsTab ? "smart-home" : 
                                 _showWeatherTab ? "weather" : 
                                 _showCalendarTab ? "calendar" : "";
                 }
             }
             catch
             {
-                activeTab = _showSmartThingsTab ? "smarthome" : 
+                _activeTab = _showSmartThingsTab ? "smart-home" : 
                             _showWeatherTab ? "weather" : 
                             _showCalendarTab ? "calendar" : "";
             }
@@ -131,22 +151,27 @@
 
     private async void ChangeTab(string tab)
     {
-        activeTab = tab;
-        
+        _activeTab = tab;
+
         // Update URL
         NavigationManager.NavigateTo($"/?tab={tab}", false);
-        
+
         // Save to localStorage
         try
         {
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "active_tab", tab);
+            await JsRuntime.InvokeVoidAsync("localStorage.setItem", "active_tab", tab);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error saving active tab: {ex.Message}");
         }
-        
+
         StateHasChanged();
+    }
+
+    private void ToggleTopTiles()
+    {
+        _showTopTiles = !_showTopTiles;
     }
 
     public void Dispose()

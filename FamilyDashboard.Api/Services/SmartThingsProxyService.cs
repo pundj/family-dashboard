@@ -6,21 +6,13 @@ using System.Text.Json;
 
 namespace FamilyDashboard.Api.Services;
 
-public class SmartThingsProxyService : ISmartThingsProxyService
+public class SmartThingsProxyService(
+    IHttpClientFactory httpClientFactory,
+    IOptions<SmartThingsOptions> options,
+    ILogger<SmartThingsProxyService> logger)
+    : ISmartThingsProxyService
 {
-    private readonly IHttpClientFactory _httpClientFactory;
-    private readonly SmartThingsOptions _options;
-    private readonly ILogger<SmartThingsProxyService> _logger;
-
-    public SmartThingsProxyService(
-        IHttpClientFactory httpClientFactory,
-        IOptions<SmartThingsOptions> options,
-        ILogger<SmartThingsProxyService> logger)
-    {
-        _httpClientFactory = httpClientFactory;
-        _options = options.Value;
-        _logger = logger;
-    }
+    private readonly SmartThingsOptions _options = options.Value;
 
     public async Task<bool> ValidateTokenAsync(string token)
     {
@@ -113,7 +105,7 @@ public class SmartThingsProxyService : ISmartThingsProxyService
 
     private HttpClient CreateClient(string token)
     {
-        var httpClient = _httpClientFactory.CreateClient();
+        var httpClient = httpClientFactory.CreateClient();
         httpClient.BaseAddress = new Uri(_options.BaseAddress);
         httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
         return httpClient;
@@ -124,12 +116,12 @@ public class SmartThingsProxyService : ISmartThingsProxyService
         var responseBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogError("Error trying to call SmartThings API. Status code: {StatusCode}. Response body: {ResponseBody}", response.StatusCode, responseBody);
+            logger.LogError("Error trying to call SmartThings API. Status code: {StatusCode}. Response body: {ResponseBody}", response.StatusCode, responseBody);
             response.EnsureSuccessStatusCode();
         }
         else
         {
-            _logger.LogDebug("Successfully called SmartThings API. Response body: {ResponseBody}", responseBody);
+            logger.LogDebug("Successfully called SmartThings API. Response body: {ResponseBody}", responseBody);
         }
     }
 
@@ -150,6 +142,7 @@ public class SmartThingsProxyService : ISmartThingsProxyService
                 throw new ArgumentException("Json response does not have expected field \"label\"", nameof(json));
             if (!device.TryGetProperty("components", out var components))
                 throw new ArgumentException("Json response does not have expected field \"components\"", nameof(json));
+            // In list response, components is an array; get first element
             var component = components.EnumerateArray().FirstOrDefault();
             if (!component.TryGetProperty("categories", out var categories))
                 throw new ArgumentException("Json response does not have expected field \"categories\" under \"components\"", nameof(json));
@@ -193,13 +186,27 @@ public class SmartThingsProxyService : ISmartThingsProxyService
 
         if (response.Type == SmartHomeDeviceType.Unknown)
         {
-            var component = components.EnumerateArray().FirstOrDefault();
-            if (!component.TryGetProperty("categories", out var categories))
-                throw new ArgumentException("Json response does not have expected field \"categories\" under \"components\"", nameof(json));
-            var category = categories.EnumerateArray().FirstOrDefault();
-            if (!category.TryGetProperty("name", out var deviceType))
-                throw new ArgumentException("Json response does not have expected field \"name\" under \"categories\"", nameof(json));
-            response.Type = TryParseDeviceType(deviceType.GetString());
+            JsonElement component;
+            // components can be either an array (in list response) or an object (in status response)
+            if (components.ValueKind == JsonValueKind.Array)
+            {
+                component = components.EnumerateArray().FirstOrDefault();
+            }
+            else
+            {
+                // components is an object with properties like 'main', 'add', etc.
+                component = components.EnumerateObject().FirstOrDefault().Value;
+            }
+
+            // Try to get categories - some device types may not have them
+            if (component.TryGetProperty("categories", out var categories))
+            {
+                var category = categories.EnumerateArray().FirstOrDefault();
+                if (category.TryGetProperty("name", out var deviceType))
+                {
+                    response.Type = TryParseDeviceType(deviceType.GetString());
+                }
+            }
         }
 
         if (response.Label is null)
@@ -210,8 +217,13 @@ public class SmartThingsProxyService : ISmartThingsProxyService
             return response;
         }
 
+        // At this point we're processing status/detail response where components is an object
+        if (components.ValueKind != JsonValueKind.Object)
+            throw new ArgumentException("Json response for status includes array-type components, expected object", nameof(json));
+
+        // Not all device types have a 'main' component - some may have other component types
         if (!components.TryGetProperty("main", out var main))
-            throw new ArgumentException($"Json response for device {response.DeviceId} - {response.Label} does not have expected field \"main\"", nameof(json));
+            return response;  // No main component, return what we have
 
         if (main.TryGetProperty("switch", out var switchHeader) &&
             switchHeader.TryGetProperty("switch", out var switchDetail) &&
