@@ -1,14 +1,14 @@
 ﻿@using FamilyDashboard.Blazor.Models.Calendar
-@using FamilyDashboard.Blazor.Services
 @using System.Text.Json
 @inject ICalendarService CalendarService
 @inject IGoogleAuthService AuthService
 @inject IConfiguration Configuration
-@inject IJSRuntime JSRuntime
+@inject IJSRuntime JsRuntime
+@inject HttpClient HttpClient
 @implements IDisposable
 
 <div class="calendar-container">
-    @if (!isAuthenticated)
+    @if (!_isAuthenticated)
     {
         <div class="auth-required">
             <h3>Calendar</h3>
@@ -26,7 +26,7 @@
             <div class="header-top">
                 <h3>Calendar</h3>
                 <div class="header-actions">
-                    <button class="btn btn-sm btn-settings" @onclick="() => showSettings = !showSettings" title="Calendar Settings">
+                    <button class="btn btn-sm btn-settings p-1 me-3" @onclick="() => _showSettings = !_showSettings" title="Calendar Settings">
                         ⚙️
                     </button>
                 </div>
@@ -38,7 +38,7 @@
                     <button class="btn btn-sm" @onclick="NextPeriod">▶</button>
                     <button class="btn btn-sm" @onclick="Today">Today</button>
                 </div>
-                <div class="view-selector">
+                <div class="view-selector me-3">
                     <button class="btn btn-sm @(ViewType == CalendarViewType.Day ? "active" : "")" 
                             @onclick="() => ChangeView(CalendarViewType.Day)">Day</button>
                     <button class="btn btn-sm @(ViewType == CalendarViewType.Week ? "active" : "")" 
@@ -50,27 +50,27 @@
         </div>
 
         <div class="calendar-body">
-            @if (isLoading)
+            @if (_isLoading)
             {
                 <p>Loading events...</p>
             }
             else if (ViewType == CalendarViewType.Day)
             {
-                <DayView Events="@filteredEvents" CurrentDate="@currentDate" OnEventClick="ShowEventDetails" />
+                <DayView Events="@_filteredEvents" CurrentDate="@_currentDate" OnEventClick="ShowEventDetails" />
             }
             else if (ViewType == CalendarViewType.Week)
             {
-                <WeekView Events="@filteredEvents" StartDate="@GetWeekStart()" WeekStart="@WeekStart" OnEventClick="ShowEventDetails" />
+                <WeekView Events="@_filteredEvents" StartDate="@GetWeekStart()" WeekStart="@_calendarPreferences.WeekStart" OnEventClick="ShowEventDetails" />
             }
             else if (ViewType == CalendarViewType.Month)
             {
-                <MonthView Events="@filteredEvents" CurrentDate="@currentDate" OnEventClick="ShowEventDetails" OnModalStateChanged="HandleChildModalStateChanged" />
+                <MonthView Events="@_filteredEvents" CurrentDate="@_currentDate" OnEventClick="ShowEventDetails" OnModalStateChanged="HandleChildModalStateChanged" />
             }
         </div>
     }
 </div>
 
-@if (showSettings)
+@if (_showSettings)
 {
     <div class="settings-modal" @onclick="async () => await CloseSettings()">
         <div class="settings-content" @onclick:stopPropagation="true">
@@ -82,19 +82,19 @@
                 <h5>Week Start Day</h5>
                 <div class="week-start-setting">
                     <label class="radio-label">
-                        <input type="radio" name="weekStartSetting" checked="@(WeekStart == WeekStartDay.Sunday)" 
+                        <input type="radio" name="weekStartSetting" checked="@(_calendarPreferences.WeekStart == WeekStartDay.Sunday)" 
                                @onchange="() => ChangeWeekStart(WeekStartDay.Sunday)" />
                         <span>Sunday</span>
                     </label>
                     <label class="radio-label">
-                        <input type="radio" name="weekStartSetting" checked="@(WeekStart == WeekStartDay.Monday)" 
+                        <input type="radio" name="weekStartSetting" checked="@(_calendarPreferences.WeekStart == WeekStartDay.Monday)" 
                                @onchange="() => ChangeWeekStart(WeekStartDay.Monday)" />
                         <span>Monday</span>
                     </label>
                 </div>
                 
                 <h5>Manage Calendars</h5>
-                @foreach (var calendar in calendarPreferences.Calendars.Values.OrderBy(c => c.DisplayName))
+                @foreach (var calendar in _calendarPreferences.Calendars.Values.OrderBy(c => c.DisplayName))
                 {
                     <div class="calendar-setting-item">
                         <div class="calendar-info">
@@ -119,16 +119,16 @@
     </div>
 }
 
-@if (selectedEvent != null)
+@if (_selectedEvent != null)
 {
     <div class="event-modal" @onclick="CloseEventDetails">
         <div class="event-modal-content" @onclick:stopPropagation="true">
             <div class="event-modal-header">
-                <h4>@selectedEvent.Title</h4>
+                <h4>@_selectedEvent.Title</h4>
                 <button class="close-btn" @onclick="CloseEventDetails">×</button>
             </div>
             <div class="event-modal-body">
-                @if (!string.IsNullOrEmpty(selectedEvent.CalendarId) && calendarPreferences.Calendars.TryGetValue(selectedEvent.CalendarId, out var calSettings))
+                @if (!string.IsNullOrEmpty(_selectedEvent.CalendarId) && _calendarPreferences.Calendars.TryGetValue(_selectedEvent.CalendarId, out var calSettings))
                 {
                     <div class="event-detail">
                         <strong>Calendar:</strong> 
@@ -138,23 +138,23 @@
                     </div>
                 }
                 <div class="event-detail">
-                    <strong>Start:</strong> @selectedEvent.StartTime.ToString(selectedEvent.IsAllDay ? "MMMM d, yyyy" : "MMMM d, yyyy h:mm tt")
+                    <strong>Start:</strong> @_selectedEvent.StartTime.ToString(_selectedEvent.IsAllDay ? "MMMM d, yyyy" : "MMMM d, yyyy h:mm tt")
                 </div>
                 <div class="event-detail">
-                    <strong>End:</strong> @selectedEvent.EndTime.ToString(selectedEvent.IsAllDay ? "MMMM d, yyyy" : "MMMM d, yyyy h:mm tt")
+                    <strong>End:</strong> @_selectedEvent.EndTime.ToString(_selectedEvent.IsAllDay ? "MMMM d, yyyy" : "MMMM d, yyyy h:mm tt")
                 </div>
-                @if (!string.IsNullOrEmpty(selectedEvent.Location))
+                @if (!string.IsNullOrEmpty(_selectedEvent.Location))
                 {
                     <div class="event-detail">
-                        <strong>Location:</strong> @selectedEvent.Location
+                        <strong>Location:</strong> @_selectedEvent.Location
                     </div>
                 }
-                @if (!string.IsNullOrEmpty(selectedEvent.Description))
+                @if (!string.IsNullOrEmpty(_selectedEvent.Description))
                 {
                     <div class="event-detail">
                         <strong>Description:</strong>
                         <div class="event-description">
-                            @((MarkupString)ProcessDescriptionHtml(selectedEvent.Description))
+                            @((MarkupString)ProcessDescriptionHtml(_selectedEvent.Description))
                         </div>
                     </div>
                 }
@@ -164,21 +164,20 @@
 }
 
 @code {
-    private CalendarViewType ViewType { get; set; } = CalendarViewType.Day;
-    private WeekStartDay WeekStart { get; set; } = WeekStartDay.Sunday;
-    private DateTime currentDate = DateTime.Today;
-    private List<CalendarEvent> events = new();
-    private List<CalendarEvent> filteredEvents = new();
-    private CalendarEvent? selectedEvent;
-    private bool isLoading = false;
-    private bool isAuthenticated = false;
-    private bool showSettings = false;
-    private CalendarPreferences calendarPreferences = new();
-    private List<string> configuredCalendarIds = new();
-    private Dictionary<string, string> customCalendarNames = new();
-    private System.Threading.Timer? _refreshTimer;
-    private bool _needsRefreshAfterModalClose = false;
-    private bool _childModalOpen = false;
+    private CalendarViewType ViewType { get; set; } = CalendarViewType.Week;
+    private DateTime _currentDate = DateTime.Today;
+    private List<CalendarEvent> _events = new();
+    private List<CalendarEvent> _filteredEvents = new();
+    private CalendarEvent? _selectedEvent;
+    private bool _isLoading;
+    private bool _isAuthenticated;
+    private bool _showSettings;
+    private CalendarPreferences _calendarPreferences = new();
+    private List<string> _configuredCalendarIds = new();
+    private Dictionary<string, string> _customCalendarNames = new();
+    private Timer? _refreshTimer;
+    private bool _needsRefreshAfterModalClose;
+    private bool _childModalOpen;
 
     private static readonly Dictionary<string, string> DefaultColors = new()
     {
@@ -198,18 +197,18 @@
     {
         AuthService.OnAuthStateChanged += HandleAuthStateChanged;
         
-        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        _isAuthenticated = await AuthService.IsAuthenticatedAsync();
         
         // Load configured calendar IDs
         var settings = Configuration.GetSection("GoogleOAuth").Get<GoogleOAuthSettings>();
-        configuredCalendarIds = settings?.CalendarIds ?? new List<string>();
-        customCalendarNames = settings?.CalendarNames ?? new Dictionary<string, string>();
+        _configuredCalendarIds = settings?.CalendarIds ?? new List<string>();
+        _customCalendarNames = settings?.CalendarNames ?? new Dictionary<string, string>();
         
         // Load preferences and view state
         await LoadPreferencesAsync();
         await LoadViewStateAsync();
         
-        if (isAuthenticated)
+        if (_isAuthenticated)
         {
             await LoadEvents();
             StartAutoRefresh();
@@ -219,7 +218,7 @@
     private void StartAutoRefresh()
     {
         // Refresh events every minute (60000 milliseconds)
-        _refreshTimer = new System.Threading.Timer(async _ =>
+        _refreshTimer = new Timer(async _ =>
         {
             await RefreshEventsIfNoModalOpen();
         }, null, TimeSpan.FromMinutes(1), TimeSpan.FromMinutes(1));
@@ -227,11 +226,11 @@
 
     private async Task RefreshEventsIfNoModalOpen()
     {
-        if (!isAuthenticated)
+        if (!_isAuthenticated)
             return;
 
         // Check if any modal is open (parent or child)
-        var isModalOpen = showSettings || selectedEvent != null || _childModalOpen;
+        var isModalOpen = _showSettings || _selectedEvent != null || _childModalOpen;
 
         if (isModalOpen)
         {
@@ -264,7 +263,7 @@
     {
         try
         {
-            var viewStateJson = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "calendar_view_state");
+            var viewStateJson = await JsRuntime.InvokeAsync<string>("localStorage.getItem", "calendar_view_state");
             
             if (!string.IsNullOrEmpty(viewStateJson))
             {
@@ -272,10 +271,9 @@
                 if (viewState != null)
                 {
                     ViewType = viewState.ViewType;
-                    WeekStart = viewState.WeekStart;
                     if (viewState.CurrentDate.HasValue)
                     {
-                        currentDate = viewState.CurrentDate.Value;
+                        _currentDate = viewState.CurrentDate.Value;
                     }
                 }
             }
@@ -293,12 +291,11 @@
             var viewState = new CalendarViewState
             {
                 ViewType = ViewType,
-                WeekStart = WeekStart,
-                CurrentDate = currentDate
+                CurrentDate = _currentDate
             };
             
             var viewStateJson = JsonSerializer.Serialize(viewState);
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendar_view_state", viewStateJson);
+            await JsRuntime.InvokeVoidAsync("localStorage.setItem", "calendar_view_state", viewStateJson);
         }
         catch (Exception ex)
         {
@@ -310,53 +307,82 @@
     {
         try
         {
-            var prefsJson = await JSRuntime.InvokeAsync<string>("localStorage.getItem", "calendar_preferences");
-            
-            if (!string.IsNullOrEmpty(prefsJson))
+            var serverPreferences = await HttpClient.GetFromJsonAsync<CalendarPreferences>("api/calendar/preferences");
+            if (serverPreferences != null)
             {
-                var loadedPrefs = JsonSerializer.Deserialize<CalendarPreferences>(prefsJson);
-                if (loadedPrefs != null)
-                {
-                    calendarPreferences = loadedPrefs;
-                }
+                _calendarPreferences = serverPreferences;
             }
-            
-            // Initialize any missing calendars
+
+            var preferencesChanged = false;
+
+            // Initialize any missing calendars and keep display names aligned with appsettings labels
             var colorIndex = 0;
             var colorKeys = DefaultColors.Keys.ToArray();
-            
-            foreach (var calId in configuredCalendarIds)
+
+            foreach (var calId in _configuredCalendarIds)
             {
-                if (!calendarPreferences.Calendars.ContainsKey(calId))
+                if (!_calendarPreferences.Calendars.TryGetValue(calId, out var existing))
                 {
                     var displayName = GetCalendarDisplayName(calId);
                     var color = DefaultColors[colorKeys[colorIndex % colorKeys.Length]];
                     colorIndex++;
-                    
-                    calendarPreferences.Calendars[calId] = new CalendarSettings
+
+                    _calendarPreferences.Calendars[calId] = new CalendarSettings
                     {
                         CalendarId = calId,
                         DisplayName = displayName,
                         Color = color,
                         IsVisible = true
                     };
+                    preferencesChanged = true;
                 }
                 else
                 {
-                    // Update display name in case it changed in appsettings
                     var currentDisplayName = GetCalendarDisplayName(calId);
-                    if (calendarPreferences.Calendars[calId].DisplayName != currentDisplayName)
+
+                    if (existing.DisplayName != currentDisplayName)
                     {
-                        calendarPreferences.Calendars[calId].DisplayName = currentDisplayName;
+                        existing.DisplayName = currentDisplayName;
+                        preferencesChanged = true;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(existing.CalendarId))
+                    {
+                        existing.CalendarId = calId;
+                        preferencesChanged = true;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(existing.Color))
+                    {
+                        existing.Color = DefaultColors[colorKeys[colorIndex % colorKeys.Length]];
+                        colorIndex++;
+                        preferencesChanged = true;
                     }
                 }
             }
-            
-            await SavePreferencesAsync();
+
+            // Remove preferences for calendars no longer configured
+            var removedKeys = _calendarPreferences.Calendars.Keys
+                .Where(id => !_configuredCalendarIds.Contains(id))
+                .ToList();
+
+            if (removedKeys.Any())
+            {
+                foreach (var key in removedKeys)
+                {
+                    _calendarPreferences.Calendars.Remove(key);
+                }
+                preferencesChanged = true;
+            }
+
+            if (preferencesChanged)
+            {
+                await SavePreferencesAsync();
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading preferences: {ex.Message}");
+            Console.WriteLine($"Error loading preferences from server: {ex.Message}");
         }
     }
 
@@ -364,19 +390,19 @@
     {
         try
         {
-            var prefsJson = JsonSerializer.Serialize(calendarPreferences);
-            await JSRuntime.InvokeVoidAsync("localStorage.setItem", "calendar_preferences", prefsJson);
+            var response = await HttpClient.PutAsJsonAsync("api/calendar/preferences", _calendarPreferences);
+            response.EnsureSuccessStatusCode();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error saving preferences: {ex.Message}");
+            Console.WriteLine($"Error saving preferences to server: {ex.Message}");
         }
     }
 
     private string GetCalendarDisplayName(string calendarId)
     {
         // First, check if user specified a custom name in appsettings
-        if (customCalendarNames.TryGetValue(calendarId, out var customName) && !string.IsNullOrWhiteSpace(customName))
+        if (_customCalendarNames.TryGetValue(calendarId, out var customName) && !string.IsNullOrWhiteSpace(customName))
         {
             return customName;
         }
@@ -424,7 +450,7 @@
 
     private async Task ToggleCalendarVisibility(string calendarId, bool isVisible)
     {
-        if (calendarPreferences.Calendars.TryGetValue(calendarId, out var settings))
+        if (_calendarPreferences.Calendars.TryGetValue(calendarId, out var settings))
         {
             settings.IsVisible = isVisible;
             await SavePreferencesAsync();
@@ -434,7 +460,7 @@
 
     private async Task UpdateCalendarColor(string calendarId, string color)
     {
-        if (calendarPreferences.Calendars.TryGetValue(calendarId, out var settings))
+        if (_calendarPreferences.Calendars.TryGetValue(calendarId, out var settings))
         {
             settings.Color = color;
             await SavePreferencesAsync();
@@ -445,9 +471,9 @@
 
     private void ApplyEventColors()
     {
-        foreach (var evt in events)
+        foreach (var evt in _events)
         {
-            if (calendarPreferences.Calendars.TryGetValue(evt.CalendarId, out var settings))
+            if (_calendarPreferences.Calendars.TryGetValue(evt.CalendarId, out var settings))
             {
                 evt.Color = settings.Color;
             }
@@ -456,24 +482,24 @@
 
     private void FilterEvents()
     {
-        filteredEvents = events
-            .Where(e => calendarPreferences.Calendars.TryGetValue(e.CalendarId, out var settings) && settings.IsVisible)
+        _filteredEvents = _events
+            .Where(e => _calendarPreferences.Calendars.TryGetValue(e.CalendarId, out var settings) && settings.IsVisible)
             .ToList();
         StateHasChanged();
     }
 
     private async void HandleAuthStateChanged()
     {
-        isAuthenticated = await AuthService.IsAuthenticatedAsync();
+        _isAuthenticated = await AuthService.IsAuthenticatedAsync();
         
-        if (isAuthenticated)
+        if (_isAuthenticated)
         {
             await LoadEvents();
         }
         else
         {
-            events.Clear();
-            filteredEvents.Clear();
+            _events.Clear();
+            _filteredEvents.Clear();
         }
         
         StateHasChanged();
@@ -494,21 +520,21 @@
         await LoadEvents(showLoadingState: true);
     }
 
-    private async Task LoadEvents(bool showLoadingState = true)
+    private async Task LoadEvents(bool showLoadingState)
     {
         if (showLoadingState)
         {
-            isLoading = true;
+            _isLoading = true;
             StateHasChanged();
         }
 
         var (start, end) = GetDateRange();
-        events = await CalendarService.GetEventsAsync(start, end);
+        _events = await CalendarService.GetEventsAsync(start, end);
         
         ApplyEventColors();
         FilterEvents();
 
-        isLoading = false;
+        _isLoading = false;
         StateHasChanged();
     }
 
@@ -516,28 +542,29 @@
     {
         return ViewType switch
         {
-            CalendarViewType.Day => (currentDate.Date, currentDate.Date.AddDays(1).AddSeconds(-1)),
+            CalendarViewType.Day => (_currentDate.Date, _currentDate.Date.AddDays(1).AddSeconds(-1)),
             CalendarViewType.Week => (GetWeekStart(), GetWeekStart().AddDays(7).AddSeconds(-1)),
-            CalendarViewType.Month => (new DateTime(currentDate.Year, currentDate.Month, 1), 
-                                       new DateTime(currentDate.Year, currentDate.Month, 1).AddMonths(1).AddSeconds(-1)),
-            _ => (currentDate, currentDate.AddDays(1))
+            CalendarViewType.Month => (new DateTime(_currentDate.Year, _currentDate.Month, 1), 
+                                       new DateTime(_currentDate.Year, _currentDate.Month, 1).AddMonths(1).AddSeconds(-1)),
+            _ => (_currentDate, _currentDate.AddDays(1))
         };
     }
 
     private DateTime GetWeekStart()
     {
-        var diff = (7 + (currentDate.DayOfWeek - (WeekStart == WeekStartDay.Sunday ? DayOfWeek.Sunday : DayOfWeek.Monday))) % 7;
-        return currentDate.AddDays(-diff).Date;
+        var diff = (7 + (_currentDate.DayOfWeek - (_calendarPreferences.WeekStart == WeekStartDay.Sunday ? DayOfWeek.Sunday : DayOfWeek.Monday))) % 7;
+        return _currentDate.AddDays(-diff).Date;
     }
 
     private string GetPeriodDisplay()
     {
         return ViewType switch
         {
-            CalendarViewType.Day => currentDate.ToString("MMMM d, yyyy"),
+            CalendarViewType.Day => _currentDate.ToString("MMMM d, yyyy"),
             CalendarViewType.Week => $"{GetWeekStart():MMM d} - {GetWeekStart().AddDays(6):MMM d, yyyy}",
-            CalendarViewType.Month => currentDate.ToString("MMMM yyyy"),
-            _ => currentDate.ToString("MMMM yyyy")
+            // ReSharper disable once RedundantSwitchExpressionArms
+            CalendarViewType.Month => _currentDate.ToString("MMMM yyyy"),
+            _ => _currentDate.ToString("MMMM yyyy")
         };
     }
 
@@ -550,19 +577,19 @@
 
     private async Task ChangeWeekStart(WeekStartDay newStart)
     {
-        WeekStart = newStart;
-        await SaveViewStateAsync();
+        _calendarPreferences.WeekStart = newStart;
+        await SavePreferencesAsync();
         await LoadEvents();
     }
 
     private async Task PreviousPeriod()
     {
-        currentDate = ViewType switch
+        _currentDate = ViewType switch
         {
-            CalendarViewType.Day => currentDate.AddDays(-1),
-            CalendarViewType.Week => currentDate.AddDays(-7),
-            CalendarViewType.Month => currentDate.AddMonths(-1),
-            _ => currentDate
+            CalendarViewType.Day => _currentDate.AddDays(-1),
+            CalendarViewType.Week => _currentDate.AddDays(-7),
+            CalendarViewType.Month => _currentDate.AddMonths(-1),
+            _ => _currentDate
         };
         await SaveViewStateAsync();
         await LoadEvents();
@@ -570,12 +597,12 @@
 
     private async Task NextPeriod()
     {
-        currentDate = ViewType switch
+        _currentDate = ViewType switch
         {
-            CalendarViewType.Day => currentDate.AddDays(1),
-            CalendarViewType.Week => currentDate.AddDays(7),
-            CalendarViewType.Month => currentDate.AddMonths(1),
-            _ => currentDate
+            CalendarViewType.Day => _currentDate.AddDays(1),
+            CalendarViewType.Week => _currentDate.AddDays(7),
+            CalendarViewType.Month => _currentDate.AddMonths(1),
+            _ => _currentDate
         };
         await SaveViewStateAsync();
         await LoadEvents();
@@ -583,19 +610,19 @@
 
     private async Task Today()
     {
-        currentDate = DateTime.Today;
+        _currentDate = DateTime.Today;
         await SaveViewStateAsync();
         await LoadEvents();
     }
 
     private void ShowEventDetails(CalendarEvent calEvent)
     {
-        selectedEvent = calEvent;
+        _selectedEvent = calEvent;
     }
 
     private async Task CloseEventDetails()
     {
-        selectedEvent = null;
+        _selectedEvent = null;
         
         // Check if we need to refresh after closing modal
         if (_needsRefreshAfterModalClose)
@@ -607,7 +634,7 @@
 
     private async Task CloseSettings()
     {
-        showSettings = false;
+        _showSettings = false;
         
         // Check if we need to refresh after closing modal
         if (_needsRefreshAfterModalClose)
@@ -646,6 +673,7 @@
 
         // Step 2: Convert plain text URLs to anchor tags (but not URLs already in HTML attributes)
         // This regex uses negative lookbehind to avoid matching URLs that are already in href, src, etc.
+        var processed1 = processed;
         processed = System.Text.RegularExpressions.Regex.Replace(
             processed,
             @"(?<!(href|src)=[""'])(https?://[^\s<>""']+)(?![""'])",
@@ -653,7 +681,7 @@
             {
                 var url = match.Value;
                 // Make sure we're not inside an HTML tag
-                var beforeMatch = processed.Substring(0, match.Index);
+                var beforeMatch = processed1.Substring(0, match.Index);
                 var lastOpenTag = beforeMatch.LastIndexOf('<');
                 var lastCloseTag = beforeMatch.LastIndexOf('>');
                 
@@ -680,14 +708,12 @@
     private class CalendarViewState
     {
         public CalendarViewType ViewType { get; set; }
-        public WeekStartDay WeekStart { get; set; }
         public DateTime? CurrentDate { get; set; }
     }
 }
 
 <style>
     .calendar-container {
-        padding: 1rem;
         color: var(--bs-body-color);
         width: 100%;
         max-width: 100%;
@@ -820,7 +846,7 @@
 
     .view-selector {
         display: flex;
-        gap: 0.5rem;
+        gap: 0.2rem;
     }
 
     .btn {

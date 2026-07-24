@@ -5,6 +5,8 @@
 
 _build/
 _site/
+/artifacts/
+/.appmod/
 
 # User-specific files
 *.suo

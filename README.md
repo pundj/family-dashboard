@@ -1,6 +1,6 @@
 # Family Dashboard
 
-A Blazor WebAssembly application for displaying family information, smart home controls, weather, calendar, and more.
+A hosted Blazor WebAssembly application for displaying family information, smart home controls, weather, calendar, and more.
 
 ## Technology Stack
 
@@ -44,18 +44,34 @@ dotnet build
 ### Run the Application
 
 ```bash
-# Run the Blazor WebAssembly application
-dotnet run --project FamilyDashboard.Blazor/FamilyDashboard.Blazor.csproj
+# Run the hosted API + Blazor frontend
+dotnet run --project FamilyDashboard.Api/FamilyDashboard.Api.csproj
 ```
 
 The application will be available at:
 - **HTTPS**: https://localhost:7104
 - **HTTP**: http://localhost:5298
 
+### Run with .NET Aspire (recommended for local development)
+
+```bash
+dotnet run --project FamilyDashboard.AppHost/FamilyDashboard.AppHost.csproj
+```
+
+Aspire AppHost orchestrates the API host and provides the local Aspire dashboard for service health and logs.
+
+### Run with Docker
+
+```bash
+docker compose up --build
+```
+
+The app will be available at http://localhost:7104 and persists API data in `FamilyDashboard.Api/App_Data`.
+
 ## Features
 
 - **Dashboard Interface** - Tabbed interface for different information types
-- **Smart Home Integration** - SmartThings device control (configurable)
+- **Smart Home Integration** - Per-user SmartThings token storage with server-side proxying
 - **Weather Forecast** - Local weather display (configurable)
 - **Calendar** - Google Calendar embed (configurable)
 - **Random Quote/Joke** - Entertainment tiles with auto-refresh
@@ -63,17 +79,20 @@ The application will be available at:
 
 ## Configuration
 
-The application uses `appsettings.json` for configuration. Features are enabled based on configuration presence:
+The application uses configuration files for non-secret settings and server-side storage for per-user SmartThings tokens:
 
-- **SmartThings**: Requires `SmartThingsApiBaseAddress` and `SmartThingsApiAccessToken`
-- **Weather**: Requires `Locale` configuration
+- **SmartThings**: Configure users in-app (Smart Home tab) and store SmartThings tokens server-side in the API database (encrypted via ASP.NET Data Protection).
+- **Weather**: Requires `Locale` configuration in `FamilyDashboard.Blazor/wwwroot/appsettings.json`
 - **Calendar**: Requires `GoogleCalendarEmbedCode`
 
 ## Project Structure
 
 ```
 family-dashboard/
-??? FamilyDashboard.Blazor/          # Blazor WebAssembly project
+??? FamilyDashboard.Api/             # ASP.NET Core host + API + auth + SmartThings proxy
+??? FamilyDashboard.Blazor/          # Blazor WebAssembly client project
+??? FamilyDashboard.AppHost/         # Aspire orchestration host for local development
+??? FamilyDashboard.ServiceDefaults/ # Shared Aspire defaults (telemetry, health checks, resilience)
 ?   ??? Pages/                        # Razor pages/components
 ?   ??? Modules/                      # Feature modules
 ?   ?   ??? Tiles/                    # Dashboard tile components
@@ -105,10 +124,10 @@ For detailed upgrade information, see [upgrade documentation](.github/upgrades/)
 ### Build for Production
 
 ```bash
-dotnet publish FamilyDashboard.Blazor/FamilyDashboard.Blazor.csproj -c Release
+dotnet publish FamilyDashboard.Api/FamilyDashboard.Api.csproj -c Release
 ```
 
-Output will be in `FamilyDashboard.Blazor/bin/Release/net10.0/publish/`
+Output will be in `FamilyDashboard.Api/bin/Release/net10.0/publish/`.
 
 ### Run Tests
 
@@ -116,6 +135,26 @@ Output will be in `FamilyDashboard.Blazor/bin/Release/net10.0/publish/`
 # If tests are available
 dotnet test
 ```
+
+
+## SmartThings Security Architecture
+
+- Users register/sign in using the backend auth endpoints (`/api/auth/*`).
+- Each signed-in user can save/replace/remove their own SmartThings personal access token from the Smart Home tab.
+- Tokens are stored server-side in SQLite (`FamilyDashboard.Api/App_Data/familydashboard.db`) and encrypted using ASP.NET Core Data Protection before persistence.
+- The browser never reads stored SmartThings tokens after submission.
+- SmartThings device reads and commands are proxied through authenticated backend endpoints (`/api/me/smartthings/*`).
+
+## Azure App Service Deployment Notes
+
+This repository now supports a single deployable app (`FamilyDashboard.Api`) suitable for Azure App Service:
+
+1. Deploy `FamilyDashboard.Api` to App Service.
+2. Persist app data and data-protection keys using durable storage in production (for example, Azure SQL/Azure Blob + Key Vault) instead of local file storage.
+3. Keep SmartThings tokens server-side only; no token values are required in `FamilyDashboard.Blazor/wwwroot/appsettings.json`.
+4. Ensure HTTPS is enabled (required for secure auth cookies).
+
+For container-based Azure hosting, build from `FamilyDashboard.Api/Dockerfile` and deploy the image to Azure Container Apps or Azure App Service for Containers.
 
 ## Browser Support
 
