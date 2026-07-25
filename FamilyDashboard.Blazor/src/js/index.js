@@ -9,8 +9,7 @@ let inactivityTimeoutId;
 let inactivityTimeoutMilliseconds = defaultInactivityTimeoutMinutes * 60 * 1000;
 let inactivityOverlay;
 let inactivityListenersRegistered = false;
-const inactivityActivityEvents = ['pointerdown', 'pointermove', 'keydown', 'touchstart'];
-
+const inactivityActivityEvents = ['pointerdown', 'keydown', 'touchstart'];
 function ensureInactivityOverlay() {
     if (inactivityOverlay) {
         return;
