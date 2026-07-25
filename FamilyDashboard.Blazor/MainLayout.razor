@@ -1,11 +1,22 @@
 ﻿@inherits LayoutComponentBase
 @inject IConfiguration Configuration
+@inject IJSRuntime JsRuntime
+@inject DashboardSettingsState DashboardSettingsState
+@implements IAsyncDisposable
 
 <PageTitle>@_familyName Family Dashboard</PageTitle>
 <main>
-    <header class="d-flex justify-content-center pt-3">
-        <DashboardTitle FamilyName="@_familyName" />
-    </header>
+    @if (_showTopTiles)
+    {
+        <div class="dashboard-top-tiles row g-2 my-1">
+            <div class="col">
+                <RandomJoke />
+            </div>
+            <div class="col">
+                <RandomQuote />
+            </div>
+        </div>
+    }
     <article class="content px-2 py-0">
         @Body
     </article>
@@ -14,11 +25,105 @@
     </footer>
 </main>
 
+@if (_showSettings)
+{
+    <div class="dashboard-settings-modal" @onclick="CloseSettings">
+        <div class="dashboard-settings-content" @onclick:stopPropagation="true" role="dialog" aria-modal="true" aria-labelledby="dashboard-settings-title">
+            <div class="dashboard-settings-header">
+                <h2 id="dashboard-settings-title">Dashboard Settings</h2>
+                <button class="btn-close" @onclick="CloseSettings" aria-label="Close settings"></button>
+            </div>
+            <div class="dashboard-settings-body">
+                <label for="inactivity-timeout" class="form-label">Screen timeout (minutes)</label>
+                <input id="inactivity-timeout"
+                       class="form-control"
+                       type="number"
+                       min="1"
+                       max="1440"
+                       @bind="_inactivityTimeoutDraftMinutes" />
+                <div class="form-text">The screen goes dark after this period of inactivity. Touch the screen to wake it.</div>
+                <div class="form-check mt-3">
+                    <input id="show-top-tiles"
+                           class="form-check-input"
+                           type="checkbox"
+                           @bind="_showTopTilesDraft" />
+                    <label class="form-check-label" for="show-top-tiles">Show joke and quote tiles</label>
+                </div>
+            </div>
+            <div class="dashboard-settings-actions">
+                <button class="btn btn-outline-secondary" @onclick="CloseSettings">Cancel</button>
+                <button class="btn btn-primary" @onclick="SaveSettingsAsync">Save</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
+    private const int DefaultInactivityTimeoutMinutes = 5;
+    private const int MaximumInactivityTimeoutMinutes = 1440;
+
     private string? _familyName;
+    private bool _showSettings;
+    private int _inactivityTimeoutMinutes = DefaultInactivityTimeoutMinutes;
+    private int _inactivityTimeoutDraftMinutes = DefaultInactivityTimeoutMinutes;
+    private bool _showTopTiles = true;
+    private bool _showTopTilesDraft = true;
+
     protected override void OnInitialized()
     {
         _familyName = Configuration["FamilyName"];
+        DashboardSettingsState.OpenRequested += OpenSettings;
         base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+
+        var storedTimeout = await JsRuntime.InvokeAsync<string?>("familyDashboard.getInactivityTimeoutMinutes");
+        if (int.TryParse(storedTimeout, out var timeout) && timeout is >= 1 and <= MaximumInactivityTimeoutMinutes)
+            _inactivityTimeoutMinutes = timeout;
+
+        var storedShowTopTiles = await JsRuntime.InvokeAsync<string?>("familyDashboard.getShowTopTiles");
+        if (bool.TryParse(storedShowTopTiles, out var showTopTiles))
+            _showTopTiles = showTopTiles;
+
+        _inactivityTimeoutDraftMinutes = _inactivityTimeoutMinutes;
+        _showTopTilesDraft = _showTopTiles;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.configureInactivityTimeout", _inactivityTimeoutMinutes);
+        StateHasChanged();
+    }
+
+    private void OpenSettings()
+    {
+        _inactivityTimeoutDraftMinutes = _inactivityTimeoutMinutes;
+        _showTopTilesDraft = _showTopTiles;
+        _showSettings = true;
+        StateHasChanged();
+    }
+
+    private void CloseSettings()
+    {
+        _showSettings = false;
+    }
+
+    private async Task SaveSettingsAsync()
+    {
+        _inactivityTimeoutMinutes = Math.Clamp(
+            _inactivityTimeoutDraftMinutes,
+            1,
+            MaximumInactivityTimeoutMinutes);
+
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setInactivityTimeoutMinutes", _inactivityTimeoutMinutes);
+        _showTopTiles = _showTopTilesDraft;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setShowTopTiles", _showTopTiles);
+        _showSettings = false;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        DashboardSettingsState.OpenRequested -= OpenSettings;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.disposeInactivityTimeout");
     }
 }

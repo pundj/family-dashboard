@@ -15,5 +15,6 @@ builder.Services.AddScoped<IWeatherForecastService, WeatherForecastService>();
 builder.Services.AddScoped<ISmartHomeService, SmartThingsService>();
 builder.Services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 builder.Services.AddScoped<ICalendarService, GoogleCalendarService>();
+builder.Services.AddScoped<DashboardSettingsState>();
 
 await builder.Build().RunAsync();
