@@ -12,7 +12,7 @@
                 aria-controls="dashboard-tabs"
                 aria-expanded="@_showTabs"
                 aria-label="@(_showTabs ? "Hide dashboard tabs" : "Show dashboard tabs")">
-            <span>            <span aria-hidden="true">@(_showTabs ? "◀" : "▶")</span></span>
+            <span aria-hidden="true">@(_showTabs ? "◀" : "▶")</span>
         </button>
         @if (_showTabs)
         {
