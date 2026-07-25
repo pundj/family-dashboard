@@ -15,12 +15,15 @@ A hosted Blazor WebAssembly application for displaying family information, smart
 - **.NET 10 SDK** (version 10.0.102 or later)
   - Download: [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
   - Verify installation: `dotnet --version`
+- **Node.js LTS** (includes npm)
+  - Required to bundle the Blazor client's JavaScript and Sass assets.
+  - Download: [Node.js](https://nodejs.org/)
+  - Verify installation: `node --version` and `npm --version`
 
-### Optional (for development)
+### Optional
 
 - **Visual Studio 2026** or later
 - **Visual Studio Code** with C# extension
-- **Node.js** (for frontend build tasks)
 
 ## Getting Started
 
@@ -34,10 +37,13 @@ cd family-dashboard
 ### Build the Application
 
 ```bash
-# Restore dependencies
-dotnet restore
+# Restore frontend dependencies
+cd FamilyDashboard.Blazor
+npm ci
+cd ..
 
-# Build the solution
+# Restore and build .NET dependencies
+dotnet restore
 dotnet build
 ```
 
@@ -76,6 +82,7 @@ The app will be available at http://localhost:7104 and persists API data in `Fam
 - **Calendar** - Google Calendar embed (configurable)
 - **Random Quote/Joke** - Entertainment tiles with auto-refresh
 - **Auto-refresh** - Tiles automatically update at configured intervals
+- **Inactivity Screen Timeout** - A configurable screen-darkening timeout that wakes when the screen is touched
 
 ## Configuration
 
@@ -83,7 +90,8 @@ The application uses configuration files for non-secret settings and server-side
 
 - **SmartThings**: Configure users in-app (Smart Home tab) and store SmartThings tokens server-side in the API database (encrypted via ASP.NET Data Protection).
 - **Weather**: Requires `Locale` configuration in `FamilyDashboard.Blazor/wwwroot/appsettings.json`
-- **Calendar**: Requires `GoogleCalendarEmbedCode`
+- **Calendar**: Configure `GoogleOAuth` for private calendar access or `GoogleCalendarEmbedCode` for an embedded calendar.
+- **Screen timeout**: Select the gear button in the dashboard header and set **Screen timeout (minutes)**. It defaults to five minutes, accepts values from 1 to 1,440 minutes, and is stored in that browser's local storage. When the timeout expires, touch or click the dark screen to resume the dashboard.
 
 ## Project Structure
 
