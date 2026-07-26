@@ -34,14 +34,6 @@
                 <button class="btn-close" @onclick="CloseSettings" aria-label="Close settings"></button>
             </div>
             <div class="dashboard-settings-body">
-                <label for="inactivity-timeout" class="form-label">Screen timeout (minutes)</label>
-                <input id="inactivity-timeout"
-                       class="form-control"
-                       type="number"
-                       min="1"
-                       max="1440"
-                       @bind="_inactivityTimeoutDraftMinutes" />
-                <div class="form-text">The screen goes dark after this period of inactivity. Touch the screen to wake it.</div>
                 <div class="form-check mt-3">
                     <input id="show-top-tiles"
                            class="form-check-input"
@@ -49,6 +41,46 @@
                            @bind="_showTopTilesDraft" />
                     <label class="form-check-label" for="show-top-tiles">Show joke and quote tiles</label>
                 </div>
+                <section class="screensaver-settings mt-4" aria-labelledby="screensaver-settings-title">
+                    <h3 id="screensaver-settings-title">Screensaver</h3>
+                    <div class="form-check">
+                        <input id="show-screensaver"
+                               class="form-check-input"
+                               type="checkbox"
+                               @bind="_showScreensaverDraft" />
+                        <label class="form-check-label" for="show-screensaver">Enable screensaver</label>
+                    </div>
+                    @if (_showScreensaverDraft)
+                    {
+                        <div class="screensaver-settings-options">
+                            <label for="inactivity-timeout" class="form-label">Screen timeout (minutes)</label>
+                            <input id="inactivity-timeout"
+                                   class="form-control"
+                                   type="number"
+                                   min="1"
+                                   max="1440"
+                                   @bind="_inactivityTimeoutDraftMinutes" />
+                            <div class="form-text">The screen goes dark after this period of inactivity. Touch the screen to wake it.</div>
+                            <div class="form-check mt-3">
+                                <input id="show-screensaver-date-time"
+                                       class="form-check-input"
+                                       type="checkbox"
+                                       @bind="_showScreensaverDateTimeDraft" />
+                                <label class="form-check-label" for="show-screensaver-date-time">Show date and time</label>
+                            </div>
+                            @if (_showScreensaverDateTimeDraft)
+                            {
+                                <div class="mt-3">
+                                    <label for="screensaver-date-time-color" class="form-label">Date and time color</label>
+                                    <input id="screensaver-date-time-color"
+                                           class="form-control form-control-color"
+                                           type="color"
+                                           @bind="_screensaverDateTimeColorDraft" />
+                                </div>
+                            }
+                        </div>
+                    }
+                </section>
             </div>
             <div class="dashboard-settings-actions">
                 <button class="btn btn-outline-secondary" @onclick="CloseSettings">Cancel</button>
@@ -68,6 +100,14 @@
     private int _inactivityTimeoutDraftMinutes = DefaultInactivityTimeoutMinutes;
     private bool _showTopTiles = true;
     private bool _showTopTilesDraft = true;
+    private bool _showScreensaver;
+    private bool _showScreensaverDraft;
+    private bool _showScreensaverDateTime;
+    private bool _showScreensaverDateTimeDraft;
+    private string _screensaverDateTimeColor = DefaultScreensaverDateTimeColor;
+    private string _screensaverDateTimeColorDraft = DefaultScreensaverDateTimeColor;
+
+    private const string DefaultScreensaverDateTimeColor = "#d0d0d0";
 
     protected override void OnInitialized()
     {
@@ -89,9 +129,29 @@
         if (bool.TryParse(storedShowTopTiles, out var showTopTiles))
             _showTopTiles = showTopTiles;
 
+        var storedShowScreensaver = await JsRuntime.InvokeAsync<string?>("familyDashboard.getShowScreensaver");
+        if (storedShowScreensaver is null)
+            _showScreensaver = true;
+        else if (bool.TryParse(storedShowScreensaver, out var showScreensaver))
+            _showScreensaver = showScreensaver;
+
+        var storedShowScreensaverDateTime = await JsRuntime.InvokeAsync<string?>("familyDashboard.getShowScreensaverDateTime");
+        if (bool.TryParse(storedShowScreensaverDateTime, out var showScreensaverDateTime))
+            _showScreensaverDateTime = showScreensaverDateTime;
+
+        var storedScreensaverDateTimeColor = await JsRuntime.InvokeAsync<string?>("familyDashboard.getScreensaverDateTimeColor");
+        if (IsHexColor(storedScreensaverDateTimeColor))
+            _screensaverDateTimeColor = storedScreensaverDateTimeColor!;
+
         _inactivityTimeoutDraftMinutes = _inactivityTimeoutMinutes;
         _showTopTilesDraft = _showTopTiles;
+        _showScreensaverDraft = _showScreensaver;
+        _showScreensaverDateTimeDraft = _showScreensaverDateTime;
+        _screensaverDateTimeColorDraft = _screensaverDateTimeColor;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaver", _showScreensaver);
         await JsRuntime.InvokeVoidAsync("familyDashboard.configureInactivityTimeout", _inactivityTimeoutMinutes);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaverDateTime", _showScreensaverDateTime);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateTimeColor", _screensaverDateTimeColor);
         StateHasChanged();
     }
 
@@ -99,6 +159,9 @@
     {
         _inactivityTimeoutDraftMinutes = _inactivityTimeoutMinutes;
         _showTopTilesDraft = _showTopTiles;
+        _showScreensaverDraft = _showScreensaver;
+        _showScreensaverDateTimeDraft = _showScreensaverDateTime;
+        _screensaverDateTimeColorDraft = _screensaverDateTimeColor;
         _showSettings = true;
         StateHasChanged();
     }
@@ -118,8 +181,17 @@
         await JsRuntime.InvokeVoidAsync("familyDashboard.setInactivityTimeoutMinutes", _inactivityTimeoutMinutes);
         _showTopTiles = _showTopTilesDraft;
         await JsRuntime.InvokeVoidAsync("familyDashboard.setShowTopTiles", _showTopTiles);
+        _showScreensaver = _showScreensaverDraft;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaver", _showScreensaver);
+        _showScreensaverDateTime = _showScreensaverDateTimeDraft;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaverDateTime", _showScreensaverDateTime);
+        _screensaverDateTimeColor = _screensaverDateTimeColorDraft;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateTimeColor", _screensaverDateTimeColor);
         _showSettings = false;
     }
+
+    private static bool IsHexColor(string? value) =>
+        value is { Length: 7 } && value[0] == '#' && value[1..].All(Uri.IsHexDigit);
 
     public async ValueTask DisposeAsync()
     {

@@ -206,6 +206,20 @@ html[data-bs-theme="dark"] {
     padding: 1rem;
 }
 
+.screensaver-settings {
+    border-top: 1px solid var(--bs-border-color);
+    padding-top: 1rem;
+}
+
+.screensaver-settings h3 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+
+.screensaver-settings-options {
+    margin-top: 1rem;
+}
+
 .dashboard-settings-header {
     border-bottom: 1px solid var(--bs-border-color);
 }
@@ -226,16 +240,57 @@ html[data-bs-theme="dark"] {
 }
 
 .inactivity-screen-overlay {
+    align-items: center;
     background: #000;
     display: none;
+    flex-direction: column;
     inset: 0;
+    justify-content: center;
     position: fixed;
     touch-action: manipulation;
     z-index: 2000;
 }
 
 .inactivity-screen-overlay.is-visible {
+    display: flex;
+}
+
+.screensaver-date-time {
+    color: var(--screensaver-date-time-color, #d0d0d0);
+    font-variant-numeric: tabular-nums;
+    text-align: center;
+}
+
+.screensaver-date,
+.screensaver-time {
     display: block;
+}
+
+.screensaver-date {
+    font-family: 'DSEG14', monospace;
+    font-size: clamp(1rem, 2vw, 2.5rem);
+    letter-spacing: 0.15em;
+    margin-bottom: clamp(2rem, 5vh, 5rem);
+}
+
+.screensaver-clock {
+    align-items: baseline;
+    display: flex;
+    gap: clamp(0.5rem, 1vw, 1.5rem);
+    justify-content: center;
+    white-space: nowrap;
+}
+
+.screensaver-time {
+    font-family: 'DSEG7', monospace;
+    font-size: min(22vh, 14vw);
+    letter-spacing: 0.025em;
+    line-height: 1;
+}
+
+.screensaver-meridiem {
+    font-family: 'DSEG14', monospace;
+    font-size: min(5vh, 3vw);
 }
 
 .dashboard-tab-sidebar {
