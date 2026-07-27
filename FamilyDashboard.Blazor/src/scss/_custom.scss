@@ -299,6 +299,53 @@ html[data-bs-theme="dark"] {
     line-height: 1;
 }
 
+.screensaver-next-event {
+    color: var(--screensaver-date-time-color, #d0d0d0);
+    margin-top: clamp(2rem, 5vh, 5rem);
+    text-align: center;
+}
+
+.screensaver-calendar-icon {
+    background: #111;
+    border: 2px solid var(--screensaver-date-time-color, #d0d0d0);
+    border-radius: 6px;
+    display: inline-flex;
+    flex-direction: column;
+    margin: 0 auto 0.75rem;
+    min-width: clamp(5rem, 12vw, 10rem);
+    overflow: hidden;
+}
+
+.screensaver-calendar-icon-header {
+    background: var(--screensaver-date-time-color, #d0d0d0);
+    color: #000;
+    font-family: 'DSEG14', monospace;
+    font-size: clamp(0.5rem, 1.5vw, 0.875rem);
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    padding: 0.2em 0.5em;
+    text-align: center;
+}
+
+.screensaver-calendar-icon-time {
+    font-family: 'DSEG14', monospace;
+    font-size: clamp(0.875rem, 2.5vw, 1.5rem);
+    letter-spacing: 0.05em;
+    padding: 0.4em 0.5em;
+    text-align: center;
+}
+
+.screensaver-event-title {
+    font-size: clamp(1rem, 3vw, 2rem);
+    font-weight: 500;
+    margin-bottom: 0.25em;
+}
+
+.screensaver-event-countdown {
+    font-size: clamp(0.875rem, 2vw, 1.25rem);
+    opacity: 0.75;
+}
+
 .dashboard-tab-sidebar {
     flex: 0 0 auto;
     margin-right: 0.75rem;
