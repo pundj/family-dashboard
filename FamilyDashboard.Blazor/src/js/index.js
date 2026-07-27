@@ -18,6 +18,11 @@ let screensaverDateTimeIntervalId;
 let screensaverEnabled = false;
 let showScreensaverDateTime = false;
 let inactivityListenersRegistered = false;
+let screensaverDotNetRef = null;
+let screensaverNextEventContainer;
+let screensaverCalendarIconTime;
+let screensaverEventTitle;
+let screensaverEventCountdown;
 const inactivityActivityEvents = ['pointerdown', 'keydown', 'touchstart'];
 function ensureInactivityOverlay() {
     if (inactivityOverlay) {
@@ -50,7 +55,32 @@ function ensureInactivityOverlay() {
     screensaverClock.append(screensaverTime, screensaverMeridiem);
     screensaverDateTimeContainer.append(screensaverDate, screensaverClock);
 
+    screensaverNextEventContainer = document.createElement('div');
+    screensaverNextEventContainer.className = 'screensaver-next-event';
+    screensaverNextEventContainer.setAttribute('hidden', '');
+
+    const calendarIcon = document.createElement('div');
+    calendarIcon.className = 'screensaver-calendar-icon';
+
+    const calendarIconHeader = document.createElement('div');
+    calendarIconHeader.className = 'screensaver-calendar-icon-header';
+    calendarIconHeader.textContent = 'NEXT';
+
+    screensaverCalendarIconTime = document.createElement('div');
+    screensaverCalendarIconTime.className = 'screensaver-calendar-icon-time';
+
+    calendarIcon.append(calendarIconHeader, screensaverCalendarIconTime);
+
+    screensaverEventTitle = document.createElement('div');
+    screensaverEventTitle.className = 'screensaver-event-title';
+
+    screensaverEventCountdown = document.createElement('div');
+    screensaverEventCountdown.className = 'screensaver-event-countdown';
+
+    screensaverNextEventContainer.append(calendarIcon, screensaverEventTitle, screensaverEventCountdown);
+
     inactivityOverlay.appendChild(screensaverDateTimeContainer);
+    inactivityOverlay.appendChild(screensaverNextEventContainer);
     document.body.appendChild(inactivityOverlay);
 }
 
@@ -99,6 +129,18 @@ function showDarkScreen() {
         updateScreensaverDateTime();
         screensaverDateTimeIntervalId = window.setInterval(updateScreensaverDateTime, 1000);
     }
+
+    if (screensaverDotNetRef) {
+        screensaverNextEventContainer?.setAttribute('hidden', '');
+        screensaverDotNetRef.invokeMethodAsync('GetNextEventForScreensaverAsync')
+            .then(eventData => {
+                window.familyDashboard.setNextEvent(eventData);
+            })
+            .catch(() => {
+                screensaverNextEventContainer?.setAttribute('hidden', '');
+            });
+    }
+
     inactivityOverlay.focus();
 }
 
@@ -115,6 +157,7 @@ function wakeScreen() {
     inactivityOverlay?.classList.remove('is-visible');
     window.clearInterval(screensaverDateTimeIntervalId);
     screensaverDateTimeIntervalId = undefined;
+    screensaverNextEventContainer?.setAttribute('hidden', '');
     resetInactivityTimer();
 }
 
@@ -185,6 +228,20 @@ window.familyDashboard = {
             }
         }
     },
+    setScreensaverDotNetRef: ref => {
+        screensaverDotNetRef = ref;
+    },
+    setNextEvent: eventData => {
+        if (!screensaverNextEventContainer) return;
+        if (!eventData) {
+            screensaverNextEventContainer.setAttribute('hidden', '');
+            return;
+        }
+        if (screensaverCalendarIconTime) screensaverCalendarIconTime.textContent = eventData.eventTime;
+        if (screensaverEventTitle) screensaverEventTitle.textContent = eventData.title;
+        if (screensaverEventCountdown) screensaverEventCountdown.textContent = eventData.timeUntilLabel;
+        screensaverNextEventContainer.removeAttribute('hidden');
+    },
     disposeInactivityTimeout: () => {
         window.clearTimeout(inactivityTimeoutId);
         window.clearInterval(screensaverDateTimeIntervalId);
@@ -193,6 +250,7 @@ window.familyDashboard = {
         }
 
         inactivityListenersRegistered = false;
+        screensaverDotNetRef = null;
         inactivityOverlay?.remove();
         inactivityOverlay = undefined;
     }
