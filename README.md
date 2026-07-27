@@ -91,6 +91,7 @@ The application uses configuration files for non-secret settings and server-side
 - **SmartThings**: Configure users in-app (Smart Home tab) and store SmartThings tokens server-side in the API database (encrypted via ASP.NET Data Protection).
 - **Weather**: Requires `Locale` configuration in `FamilyDashboard.Blazor/wwwroot/appsettings.json`
 - **Calendar**: Configure `GoogleOAuth` for private calendar access or `GoogleCalendarEmbedCode` for an embedded calendar.
+- **Cameras**: Set `CameraViewerUrl` to an absolute `http`/`https` URL to show a Cameras tab with an embedded iframe viewer.
 - **Screen timeout**: Select the gear button in the dashboard header and set **Screen timeout (minutes)**. It defaults to five minutes, accepts values from 1 to 1,440 minutes, and is stored in that browser's local storage. When the timeout expires, touch or click the dark screen to resume the dashboard.
 
 ## Project Structure

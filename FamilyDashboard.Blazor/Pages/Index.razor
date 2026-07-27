@@ -32,6 +32,11 @@
                 <button class="nav-link @(_activeTab == "calendar" ? "active" : "")" 
                         @onclick='() => ChangeTab("calendar")'>Calendar</button>
             }
+            @if (_showCamerasTab)
+            {
+                <button class="nav-link @(_activeTab == "cameras" ? "active" : "")"
+                        @onclick='() => ChangeTab("cameras")'>Cameras</button>
+            }
         </div>
         <button class="btn btn-sm btn-outline-secondary mt-2 w-100"
                 @onclick="DashboardSettingsState.RequestOpen">
@@ -68,6 +73,18 @@
                 }
             </div>
         }
+        @if (_showCamerasTab)
+        {
+            <div class="tab-pane fade @(_activeTab == "cameras" ? "show active" : "")">
+                @if (_activeTab == "cameras")
+                {
+                    <iframe src="@_cameraViewerUrl"
+                            class="w-100 border-0 rounded"
+                            style="height: calc(100vh - 10rem);"
+                            title="Camera Viewer"></iframe>
+                }
+            </div>
+        }
     </div>
 </div>
 
@@ -76,7 +93,9 @@
     bool _showSmartThingsTab;
     bool _showWeatherTab;
     bool _showCalendarTab;
+    bool _showCamerasTab;
     bool _showTabs = true;
+    string _cameraViewerUrl = string.Empty;
     string _activeTab = "";
 
     protected override async Task OnInitializedAsync()
@@ -86,6 +105,8 @@
         _showCalendarTab = Configuration != null && 
             (Configuration.GetValue<string>("GoogleOAuth:ClientId") != null || 
              Configuration.GetValue<string>("GoogleCalendarEmbedCode") != null);
+        _cameraViewerUrl = GetCameraViewerUrl();
+        _showCamerasTab = !string.IsNullOrEmpty(_cameraViewerUrl);
 
         // Load active tab from URL or localStorage
         await LoadActiveTabAsync();
@@ -103,7 +124,7 @@
         
         if (!string.IsNullOrEmpty(tabFromUrl))
         {
-            _activeTab = tabFromUrl;
+            _activeTab = IsTabAvailable(tabFromUrl) ? tabFromUrl : GetDefaultTab();
             StateHasChanged();
         }
     }
@@ -131,18 +152,18 @@
                 }
                 else
                 {
-                    // Default to first available tab
-                    _activeTab = _showSmartThingsTab ? "smart-home" : 
-                                _showWeatherTab ? "weather" : 
-                                _showCalendarTab ? "calendar" : "";
+                    _activeTab = GetDefaultTab();
                 }
             }
             catch
             {
-                _activeTab = _showSmartThingsTab ? "smart-home" : 
-                            _showWeatherTab ? "weather" : 
-                            _showCalendarTab ? "calendar" : "";
+                _activeTab = GetDefaultTab();
             }
+        }
+
+        if (!IsTabAvailable(_activeTab))
+        {
+            _activeTab = GetDefaultTab();
         }
     }
 
@@ -169,6 +190,44 @@
     private void ToggleTabs()
     {
         _showTabs = !_showTabs;
+    }
+
+    private string GetDefaultTab()
+    {
+        return _showSmartThingsTab ? "smart-home" :
+               _showWeatherTab ? "weather" :
+               _showCalendarTab ? "calendar" :
+               _showCamerasTab ? "cameras" : "";
+    }
+
+    private bool IsTabAvailable(string tab)
+    {
+        return tab switch
+        {
+            "smart-home" => _showSmartThingsTab,
+            "weather" => _showWeatherTab,
+            "calendar" => _showCalendarTab,
+            "cameras" => _showCamerasTab,
+            _ => false
+        };
+    }
+
+    private string GetCameraViewerUrl()
+    {
+        var configuredValue = Configuration?.GetValue<string>("CameraViewerUrl");
+        if (string.IsNullOrWhiteSpace(configuredValue))
+        {
+            return string.Empty;
+        }
+
+        var trimmedValue = configuredValue.Trim();
+        if (Uri.TryCreate(trimmedValue, UriKind.Absolute, out var cameraUri) &&
+            (cameraUri.Scheme == Uri.UriSchemeHttp || cameraUri.Scheme == Uri.UriSchemeHttps))
+        {
+            return cameraUri.ToString();
+        }
+
+        return string.Empty;
     }
 
     public void Dispose()
