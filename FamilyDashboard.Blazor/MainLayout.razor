@@ -77,6 +77,28 @@
                                            type="color"
                                            @bind="_screensaverDateTimeColorDraft" />
                                 </div>
+                                <div class="mt-3">
+                                    <label for="screensaver-date-format" class="form-label">Date format</label>
+                                    <select id="screensaver-date-format"
+                                            class="form-select"
+                                            @bind="_screensaverDateFormatDraft">
+                                        @foreach (var option in ScreensaverDateFormatOptions)
+                                        {
+                                            <option value="@option.Value">@option.Label</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="mt-3">
+                                    <label for="screensaver-time-format" class="form-label">Time format</label>
+                                    <select id="screensaver-time-format"
+                                            class="form-select"
+                                            @bind="_screensaverTimeFormatDraft">
+                                        @foreach (var option in ScreensaverTimeFormatOptions)
+                                        {
+                                            <option value="@option.Value">@option.Label</option>
+                                        }
+                                    </select>
+                                </div>
                             }
                         </div>
                     }
@@ -106,8 +128,28 @@
     private bool _showScreensaverDateTimeDraft;
     private string _screensaverDateTimeColor = DefaultScreensaverDateTimeColor;
     private string _screensaverDateTimeColorDraft = DefaultScreensaverDateTimeColor;
+    private string _screensaverDateFormat = DefaultScreensaverDateFormat;
+    private string _screensaverDateFormatDraft = DefaultScreensaverDateFormat;
+    private string _screensaverTimeFormat = DefaultScreensaverTimeFormat;
+    private string _screensaverTimeFormatDraft = DefaultScreensaverTimeFormat;
 
     private const string DefaultScreensaverDateTimeColor = "#d0d0d0";
+    private const string DefaultScreensaverDateFormat = "ddd MMM d yyyy";
+    private const string DefaultScreensaverTimeFormat = "h:mm:ss tt";
+    private static readonly IReadOnlyList<FormatOption> ScreensaverDateFormatOptions =
+    [
+        new(DefaultScreensaverDateFormat, "MON JUL 27 2026 (default)"),
+        new("MMMM d, yyyy", "July 27, 2026"),
+        new("M/d/yyyy", "7/27/2026"),
+        new("yyyy-MM-dd", "2026-07-27")
+    ];
+    private static readonly IReadOnlyList<FormatOption> ScreensaverTimeFormatOptions =
+    [
+        new(DefaultScreensaverTimeFormat, "4:30:35 AM (default)"),
+        new("h:mm tt", "4:30 AM"),
+        new("HH:mm:ss", "04:30:35"),
+        new("HH:mm", "04:30")
+    ];
 
     protected override void OnInitialized()
     {
@@ -143,15 +185,27 @@
         if (IsHexColor(storedScreensaverDateTimeColor))
             _screensaverDateTimeColor = storedScreensaverDateTimeColor!;
 
+        var storedScreensaverDateFormat = await JsRuntime.InvokeAsync<string?>("familyDashboard.getScreensaverDateFormat");
+        if (IsSupportedFormat(storedScreensaverDateFormat, ScreensaverDateFormatOptions))
+            _screensaverDateFormat = storedScreensaverDateFormat!;
+
+        var storedScreensaverTimeFormat = await JsRuntime.InvokeAsync<string?>("familyDashboard.getScreensaverTimeFormat");
+        if (IsSupportedFormat(storedScreensaverTimeFormat, ScreensaverTimeFormatOptions))
+            _screensaverTimeFormat = storedScreensaverTimeFormat!;
+
         _inactivityTimeoutDraftMinutes = _inactivityTimeoutMinutes;
         _showTopTilesDraft = _showTopTiles;
         _showScreensaverDraft = _showScreensaver;
         _showScreensaverDateTimeDraft = _showScreensaverDateTime;
         _screensaverDateTimeColorDraft = _screensaverDateTimeColor;
+        _screensaverDateFormatDraft = _screensaverDateFormat;
+        _screensaverTimeFormatDraft = _screensaverTimeFormat;
         await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaver", _showScreensaver);
         await JsRuntime.InvokeVoidAsync("familyDashboard.configureInactivityTimeout", _inactivityTimeoutMinutes);
-        await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaverDateTime", _showScreensaverDateTime);
         await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateTimeColor", _screensaverDateTimeColor);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateFormat", _screensaverDateFormat);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverTimeFormat", _screensaverTimeFormat);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaverDateTime", _showScreensaverDateTime);
         StateHasChanged();
     }
 
@@ -162,6 +216,8 @@
         _showScreensaverDraft = _showScreensaver;
         _showScreensaverDateTimeDraft = _showScreensaverDateTime;
         _screensaverDateTimeColorDraft = _screensaverDateTimeColor;
+        _screensaverDateFormatDraft = _screensaverDateFormat;
+        _screensaverTimeFormatDraft = _screensaverTimeFormat;
         _showSettings = true;
         StateHasChanged();
     }
@@ -187,11 +243,20 @@
         await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaverDateTime", _showScreensaverDateTime);
         _screensaverDateTimeColor = _screensaverDateTimeColorDraft;
         await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateTimeColor", _screensaverDateTimeColor);
+        _screensaverDateFormat = _screensaverDateFormatDraft;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateFormat", _screensaverDateFormat);
+        _screensaverTimeFormat = _screensaverTimeFormatDraft;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverTimeFormat", _screensaverTimeFormat);
         _showSettings = false;
     }
 
     private static bool IsHexColor(string? value) =>
         value is { Length: 7 } && value[0] == '#' && value[1..].All(Uri.IsHexDigit);
+
+    private static bool IsSupportedFormat(string? value, IEnumerable<FormatOption> options) =>
+        value is not null && options.Any(option => option.Value == value);
+
+    private sealed record FormatOption(string Value, string Label);
 
     public async ValueTask DisposeAsync()
     {

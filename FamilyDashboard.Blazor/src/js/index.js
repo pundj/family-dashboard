@@ -7,17 +7,20 @@ import '@fontsource/dseg14/classic-400.css'
 import 'bootstrap'
 
 const defaultInactivityTimeoutMinutes = 5;
+const defaultScreensaverDateFormat = 'ddd MMM d yyyy';
+const defaultScreensaverTimeFormat = 'h:mm:ss tt';
 let inactivityTimeoutId;
 let inactivityTimeoutMilliseconds = defaultInactivityTimeoutMinutes * 60 * 1000;
 let inactivityOverlay;
 let screensaverDateTimeContainer;
 let screensaverDate;
 let screensaverTime;
-let screensaverMeridiem;
 let screensaverDateTimeIntervalId;
 let screensaverEnabled = false;
 let showScreensaverDateTime = false;
 let inactivityListenersRegistered = false;
+let screensaverDateFormat = defaultScreensaverDateFormat;
+let screensaverTimeFormat = defaultScreensaverTimeFormat;
 const inactivityActivityEvents = ['pointerdown', 'keydown', 'touchstart'];
 function ensureInactivityOverlay() {
     if (inactivityOverlay) {
@@ -45,9 +48,7 @@ function ensureInactivityOverlay() {
     screensaverClock.className = 'screensaver-clock';
     screensaverTime = document.createElement('time');
     screensaverTime.className = 'screensaver-time';
-    screensaverMeridiem = document.createElement('span');
-    screensaverMeridiem.className = 'screensaver-meridiem';
-    screensaverClock.append(screensaverTime, screensaverMeridiem);
+    screensaverClock.appendChild(screensaverTime);
     screensaverDateTimeContainer.append(screensaverDate, screensaverClock);
 
     inactivityOverlay.appendChild(screensaverDateTimeContainer);
@@ -55,40 +56,60 @@ function ensureInactivityOverlay() {
 }
 
 function updateScreensaverDateTime() {
-    if (!screensaverDate || !screensaverTime || !screensaverMeridiem) {
+    if (!screensaverDate || !screensaverTime) {
         return;
     }
 
     const now = new Date();
     screensaverDate.dateTime = now.toISOString().slice(0, 10);
-    const dateParts = new Intl.DateTimeFormat(undefined, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    }).formatToParts(now);
-    screensaverDate.textContent = ['weekday', 'month', 'day', 'year']
-        .map(type => dateParts.find(part => part.type === type)?.value)
-        .filter(Boolean)
-        .join(' ')
-        .toUpperCase();
+    const formattedDate = formatDateTime(now, screensaverDateFormat);
+    screensaverDate.textContent = screensaverDateFormat === defaultScreensaverDateFormat
+        ? formattedDate.toUpperCase()
+        : formattedDate;
     screensaverTime.dateTime = now.toTimeString().slice(0, 8);
-    const timeParts = new Intl.DateTimeFormat(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit'
-    }).formatToParts(now);
-    screensaverTime.textContent = timeParts
-        .filter(part => part.type !== 'dayPeriod')
-        .map(part => part.value)
-        .join('')
-        .trim();
-    screensaverMeridiem.textContent = timeParts
-        .filter(part => part.type === 'dayPeriod')
-        .map(part => part.value)
-        .join('')
-        .toUpperCase();
+    screensaverTime.textContent = formatDateTime(now, screensaverTimeFormat);
+}
 
+function formatDateTime(date, pattern) {
+    const safePattern = pattern || '';
+    const tokenValues = {
+        yyyy: String(date.getFullYear()),
+        yy: String(date.getFullYear()).slice(-2),
+        MMMM: getLocalizedPart(date, { month: 'long' }),
+        MMM: getLocalizedPart(date, { month: 'short' }),
+        MM: String(date.getMonth() + 1).padStart(2, '0'),
+        M: String(date.getMonth() + 1),
+        dddd: getLocalizedPart(date, { weekday: 'long' }),
+        ddd: getLocalizedPart(date, { weekday: 'short' }),
+        dd: String(date.getDate()).padStart(2, '0'),
+        d: String(date.getDate()),
+        HH: String(date.getHours()).padStart(2, '0'),
+        H: String(date.getHours()),
+        hh: String((date.getHours() % 12) || 12).padStart(2, '0'),
+        h: String((date.getHours() % 12) || 12),
+        mm: String(date.getMinutes()).padStart(2, '0'),
+        m: String(date.getMinutes()),
+        ss: String(date.getSeconds()).padStart(2, '0'),
+        s: String(date.getSeconds()),
+        tt: getDayPeriod(date),
+        t: getDayPeriod(date).charAt(0)
+    };
+
+    return safePattern.replace(/yyyy|yy|MMMM|MMM|MM|M|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|tt|t/g, token => tokenValues[token]);
+}
+
+function getLocalizedPart(date, options) {
+    return new Intl.DateTimeFormat(undefined, options).format(date);
+}
+
+function getDayPeriod(date) {
+    return new Intl.DateTimeFormat(undefined, {
+        hour: 'numeric',
+        hour12: true
+    }).formatToParts(date)
+        .find(part => part.type === 'dayPeriod')
+        ?.value
+        ?.toUpperCase() ?? '';
 }
 
 function showDarkScreen() {
@@ -150,6 +171,8 @@ window.familyDashboard = {
     getShowScreensaver: () => window.localStorage.getItem('show_screensaver'),
     getShowScreensaverDateTime: () => window.localStorage.getItem('show_screensaver_date_time'),
     getScreensaverDateTimeColor: () => window.localStorage.getItem('screensaver_date_time_color'),
+    getScreensaverDateFormat: () => window.localStorage.getItem('screensaver_date_format'),
+    getScreensaverTimeFormat: () => window.localStorage.getItem('screensaver_time_format'),
     configureInactivityTimeout,
     setInactivityTimeoutMinutes: timeoutMinutes => {
         window.localStorage.setItem('inactivity_timeout_minutes', timeoutMinutes);
@@ -169,6 +192,20 @@ window.familyDashboard = {
     setScreensaverDateTimeColor: color => {
         window.localStorage.setItem('screensaver_date_time_color', color);
         inactivityOverlay?.style.setProperty('--screensaver-date-time-color', color);
+    },
+    setScreensaverDateFormat: format => {
+        screensaverDateFormat = format || defaultScreensaverDateFormat;
+        window.localStorage.setItem('screensaver_date_format', screensaverDateFormat);
+        if (showScreensaverDateTime) {
+            updateScreensaverDateTime();
+        }
+    },
+    setScreensaverTimeFormat: format => {
+        screensaverTimeFormat = format || defaultScreensaverTimeFormat;
+        window.localStorage.setItem('screensaver_time_format', screensaverTimeFormat);
+        if (showScreensaverDateTime) {
+            updateScreensaverDateTime();
+        }
     },
     setShowScreensaverDateTime: enabled => {
         showScreensaverDateTime = enabled;
