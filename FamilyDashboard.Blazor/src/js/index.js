@@ -9,6 +9,7 @@ import 'bootstrap'
 const defaultInactivityTimeoutMinutes = 5;
 const defaultScreensaverDateFormat = 'ddd MMM d yyyy';
 const defaultScreensaverTimeFormat = 'h:mm:ss tt';
+const dateTimeFormatTokenPattern = /yyyy|MMMM|dddd|MMM|ddd|yy|MM|dd|HH|hh|mm|ss|tt|M|d|H|h|m|s|t/g;
 let inactivityTimeoutId;
 let inactivityTimeoutMilliseconds = defaultInactivityTimeoutMinutes * 60 * 1000;
 let inactivityOverlay;
@@ -95,7 +96,7 @@ function formatDateTime(date, pattern) {
         t: getDayPeriod(date).charAt(0)
     };
 
-    return safePattern.replace(/yyyy|yy|MMMM|MMM|MM|M|dddd|ddd|dd|d|HH|H|hh|h|mm|m|ss|s|tt|t/g, token => tokenValues[token]);
+    return safePattern.replace(dateTimeFormatTokenPattern, token => tokenValues[token]);
 }
 
 function getLocalizedPart(date, options) {
