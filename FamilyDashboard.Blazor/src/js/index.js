@@ -130,7 +130,6 @@ function getDayPeriod(date) {
 
 async function showDarkScreen() {
     ensureInactivityOverlay();
-    await screensaverActivationCallback?.invokeMethodAsync('OnScreensaverShown');
     inactivityOverlay.classList.add('is-visible');
     if (showScreensaverDateTime) {
         window.clearInterval(screensaverDateTimeIntervalId);
@@ -138,6 +137,10 @@ async function showDarkScreen() {
         screensaverDateTimeIntervalId = window.setInterval(updateScreensaverDateTime, 1000);
     }
     inactivityOverlay.focus();
+    try {
+        await screensaverActivationCallback?.invokeMethodAsync('OnScreensaverShown');
+    } catch {
+    }
 }
 
 function resetInactivityTimer() {
@@ -146,7 +149,9 @@ function resetInactivityTimer() {
         return;
     }
 
-    inactivityTimeoutId = window.setTimeout(showDarkScreen, inactivityTimeoutMilliseconds);
+    inactivityTimeoutId = window.setTimeout(() => {
+        void showDarkScreen();
+    }, inactivityTimeoutMilliseconds);
 }
 
 function wakeScreen() {
