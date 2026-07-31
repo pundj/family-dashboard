@@ -152,6 +152,7 @@
     private string _screensaverTimeFormatDraft = DefaultScreensaverTimeFormat;
     private FormatPreview _screensaverDateFormatPreview = FormatPreview.Valid(DefaultScreensaverDateFormat);
     private FormatPreview _screensaverTimeFormatPreview = FormatPreview.Valid(DefaultScreensaverTimeFormat);
+    private DotNetObjectReference<MainLayout>? _screensaverActivationCallback;
 
     private const string DefaultScreensaverDateTimeColor = "#d0d0d0";
     private const string DefaultScreensaverDateFormat = "ddd MMM d yyyy";
@@ -233,6 +234,10 @@
         _screensaverDateFormatDraft = _screensaverDateFormat;
         _screensaverTimeFormatDraft = _screensaverTimeFormat;
         UpdateFormatPreviews();
+        _screensaverActivationCallback = DotNetObjectReference.Create(this);
+        await JsRuntime.InvokeVoidAsync(
+            "familyDashboard.setScreensaverActivationCallback",
+            _screensaverActivationCallback);
         await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaver", _showScreensaver);
         await JsRuntime.InvokeVoidAsync("familyDashboard.configureInactivityTimeout", _inactivityTimeoutMinutes);
         await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateTimeColor", _screensaverDateTimeColor);
@@ -259,6 +264,12 @@
     private void CloseSettings()
     {
         _showSettings = false;
+    }
+
+    [JSInvokable]
+    public Task OnScreensaverShown()
+    {
+        return DashboardSettingsState.NotifyScreensaverShownAsync();
     }
 
     private async Task SaveSettingsAsync()
@@ -346,5 +357,6 @@
     {
         DashboardSettingsState.OpenRequested -= OpenSettings;
         await JsRuntime.InvokeVoidAsync("familyDashboard.disposeInactivityTimeout");
+        _screensaverActivationCallback?.Dispose();
     }
 }
