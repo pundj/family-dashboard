@@ -16,12 +16,14 @@ let inactivityOverlay;
 let screensaverDateTimeContainer;
 let screensaverDate;
 let screensaverTime;
+let screensaverMeridiem;
 let screensaverDateTimeIntervalId;
 let screensaverEnabled = false;
 let showScreensaverDateTime = false;
 let inactivityListenersRegistered = false;
 let screensaverDateFormat = defaultScreensaverDateFormat;
 let screensaverTimeFormat = defaultScreensaverTimeFormat;
+let screensaverActivationCallback;
 const inactivityActivityEvents = ['pointerdown', 'keydown', 'touchstart'];
 function ensureInactivityOverlay() {
     if (inactivityOverlay) {
@@ -49,7 +51,9 @@ function ensureInactivityOverlay() {
     screensaverClock.className = 'screensaver-clock';
     screensaverTime = document.createElement('time');
     screensaverTime.className = 'screensaver-time';
-    screensaverClock.appendChild(screensaverTime);
+    screensaverMeridiem = document.createElement('span');
+    screensaverMeridiem.className = 'screensaver-meridiem';
+    screensaverClock.append(screensaverTime, screensaverMeridiem);
     screensaverDateTimeContainer.append(screensaverDate, screensaverClock);
 
     inactivityOverlay.appendChild(screensaverDateTimeContainer);
@@ -57,7 +61,7 @@ function ensureInactivityOverlay() {
 }
 
 function updateScreensaverDateTime() {
-    if (!screensaverDate || !screensaverTime) {
+    if (!screensaverDate || !screensaverTime || !screensaverMeridiem) {
         return;
     }
 
@@ -68,7 +72,18 @@ function updateScreensaverDateTime() {
         ? formattedDate.toUpperCase()
         : formattedDate;
     screensaverTime.dateTime = now.toTimeString().slice(0, 8);
-    screensaverTime.textContent = formatDateTime(now, screensaverTimeFormat);
+    const formattedTime = formatTime(now, screensaverTimeFormat);
+    screensaverTime.textContent = formattedTime.value;
+    screensaverMeridiem.textContent = formattedTime.meridiem;
+    screensaverMeridiem.hidden = !formattedTime.meridiem;
+}
+
+function formatTime(date, pattern) {
+    const hasMeridiem = /tt|t/.test(pattern);
+    return {
+        value: formatDateTime(date, pattern.replace(/tt|t/g, '')).trim(),
+        meridiem: hasMeridiem ? getDayPeriod(date) : ''
+    };
 }
 
 function formatDateTime(date, pattern) {
@@ -113,7 +128,7 @@ function getDayPeriod(date) {
         ?.toUpperCase() ?? '';
 }
 
-function showDarkScreen() {
+async function showDarkScreen() {
     ensureInactivityOverlay();
     inactivityOverlay.classList.add('is-visible');
     if (showScreensaverDateTime) {
@@ -122,6 +137,10 @@ function showDarkScreen() {
         screensaverDateTimeIntervalId = window.setInterval(updateScreensaverDateTime, 1000);
     }
     inactivityOverlay.focus();
+    try {
+        await screensaverActivationCallback?.invokeMethodAsync('OnScreensaverShown');
+    } catch {
+    }
 }
 
 function resetInactivityTimer() {
@@ -130,7 +149,9 @@ function resetInactivityTimer() {
         return;
     }
 
-    inactivityTimeoutId = window.setTimeout(showDarkScreen, inactivityTimeoutMilliseconds);
+    inactivityTimeoutId = window.setTimeout(() => {
+        void showDarkScreen();
+    }, inactivityTimeoutMilliseconds);
 }
 
 function wakeScreen() {
@@ -174,6 +195,9 @@ window.familyDashboard = {
     getScreensaverDateTimeColor: () => window.localStorage.getItem('screensaver_date_time_color'),
     getScreensaverDateFormat: () => window.localStorage.getItem('screensaver_date_format'),
     getScreensaverTimeFormat: () => window.localStorage.getItem('screensaver_time_format'),
+    setScreensaverActivationCallback: callback => {
+        screensaverActivationCallback = callback;
+    },
     configureInactivityTimeout,
     setInactivityTimeoutMinutes: timeoutMinutes => {
         window.localStorage.setItem('inactivity_timeout_minutes', timeoutMinutes);
@@ -224,6 +248,7 @@ window.familyDashboard = {
         }
     },
     disposeInactivityTimeout: () => {
+        screensaverActivationCallback = undefined;
         window.clearTimeout(inactivityTimeoutId);
         window.clearInterval(screensaverDateTimeIntervalId);
         for (const eventName of inactivityActivityEvents) {

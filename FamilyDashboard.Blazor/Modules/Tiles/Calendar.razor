@@ -5,6 +5,7 @@
 @inject IConfiguration Configuration
 @inject IJSRuntime JsRuntime
 @inject HttpClient HttpClient
+@inject DashboardSettingsState DashboardSettingsState
 @implements IDisposable
 
 <div class="calendar-container">
@@ -196,6 +197,7 @@
     protected override async Task OnInitializedAsync()
     {
         AuthService.OnAuthStateChanged += HandleAuthStateChanged;
+        DashboardSettingsState.ScreensaverShown += HandleScreensaverShown;
         
         _isAuthenticated = await AuthService.IsAuthenticatedAsync();
         
@@ -632,6 +634,17 @@
         }
     }
 
+    private Task HandleScreensaverShown()
+    {
+        return InvokeAsync(async () =>
+        {
+            if (_selectedEvent is not null)
+                await CloseEventDetails();
+
+            StateHasChanged();
+        });
+    }
+
     private async Task CloseSettings()
     {
         _showSettings = false;
@@ -702,6 +715,7 @@
     public void Dispose()
     {
         AuthService.OnAuthStateChanged -= HandleAuthStateChanged;
+        DashboardSettingsState.ScreensaverShown -= HandleScreensaverShown;
         _refreshTimer?.Dispose();
     }
 
