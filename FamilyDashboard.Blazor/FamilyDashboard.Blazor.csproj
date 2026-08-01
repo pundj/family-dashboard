@@ -19,11 +19,13 @@
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
 
-  <Target Name="PreBuildDebug" BeforeTargets="PreBuildEvent" Condition=" '$(Configuration)' == 'Debug'">
-  	<Exec Command="npm run build" />
-  </Target>
-  <Target Name="PreBuildDebug" BeforeTargets="PreBuildEvent" Condition=" '$(Configuration)' == 'Release'">
-  	<Exec Command="npm run production" />
+  <Target Name="BuildFrontendAssets" BeforeTargets="Build">
+    <Exec Command="npm run build"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          Condition=" '$(Configuration)' == 'Debug'" />
+    <Exec Command="npm run production"
+          WorkingDirectory="$(MSBuildProjectDirectory)"
+          Condition=" '$(Configuration)' == 'Release'" />
   </Target>
 
 </Project>
