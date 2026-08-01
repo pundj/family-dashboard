@@ -75,19 +75,18 @@ public class GoogleCalendarService : ICalendarService
                   $"&orderBy=startTime" +
                   $"&maxResults=1";
 
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+using var request = new HttpRequestMessage(HttpMethod.Get, url);
+request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-        var response = await _httpClient.SendAsync(request);
+using var response = await _httpClient.SendAsync(request);
 
-        if (!response.IsSuccessStatusCode)
-        {
-            return null;
-        }
+if (!response.IsSuccessStatusCode)
+{
+    return null;
+}
 
-        var content = await response.Content.ReadAsStringAsync();
-        var jsonDoc = JsonDocument.Parse(content);
-
+var content = await response.Content.ReadAsStringAsync();
+using var jsonDoc = JsonDocument.Parse(content);
         if (jsonDoc.RootElement.TryGetProperty("items", out var items))
         {
             var enumerator = items.EnumerateArray();
