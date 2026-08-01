@@ -2,6 +2,10 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 COPY . .
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends nodejs npm \
+    && rm -rf /var/lib/apt/lists/*
+RUN npm ci --prefix FamilyDashboard.Blazor
 RUN dotnet restore FamilyDashboard.Api/FamilyDashboard.Api.csproj
 RUN dotnet publish FamilyDashboard.Api/FamilyDashboard.Api.csproj -c Release -o /app/publish /p:UseAppHost=false
 
