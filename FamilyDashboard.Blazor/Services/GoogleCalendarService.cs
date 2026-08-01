@@ -70,7 +70,7 @@ public class GoogleCalendarService : ICalendarService
             $"&timeMax={timeMax}" +
             $"&singleEvents=true" +
             $"&orderBy=startTime" +
-            $"&eventTypes=default";
+            $"&maxResults=25";
 
         string? pageToken = null;
         do
