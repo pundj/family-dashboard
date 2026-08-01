@@ -1,8 +1,6 @@
 using FamilyDashboard.Blazor.Models.Calendar;
-using Microsoft.Extensions.Configuration;
-using System.Net.Http.Json;
-using System.Text.Json;
 using System.Net.Http.Headers;
+using System.Text.Json;
 
 namespace FamilyDashboard.Blazor.Services;
 
@@ -14,22 +12,106 @@ public class GoogleCalendarService : ICalendarService
     private readonly List<string> _calendarIds;
 
     public GoogleCalendarService(
-        IHttpClientFactory httpClientFactory, 
+        IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
         IGoogleAuthService authService)
     {
         _httpClient = httpClientFactory.CreateClient();
         _configuration = configuration;
         _authService = authService;
-        
+
         var settings = _configuration.GetSection("GoogleOAuth").Get<GoogleOAuthSettings>();
         _calendarIds = settings?.CalendarIds ?? new List<string>();
+    }
+
+    public async Task<CalendarEvent?> GetNextTimedEventAsync()
+    {
+        var accessToken = await _authService.GetAccessTokenAsync();
+
+        if (string.IsNullOrEmpty(accessToken) || !_calendarIds.Any())
+        {
+            return null;
+        }
+
+        var now = DateTime.UtcNow;
+        var end = now.AddDays(7);
+
+        CalendarEvent? nextEvent = null;
+
+        foreach (var calendarId in _calendarIds)
+        {
+            try
+            {
+                var candidate = await FetchNextTimedEventForCalendarAsync(calendarId, now, end, accessToken);
+                if (candidate != null && (nextEvent == null || candidate.StartTime < nextEvent.StartTime))
+                {
+                    nextEvent = candidate;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching next event for calendar {calendarId}: {ex}");
+            }
+        }
+
+        return nextEvent;
+    }
+
+    private async Task<CalendarEvent?> FetchNextTimedEventForCalendarAsync(
+        string calendarId,
+        DateTime startDate,
+        DateTime endDate,
+        string accessToken)
+    {
+        var timeMin = startDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var timeMax = endDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var baseUrl = $"https://www.googleapis.com/calendar/v3/calendars/{Uri.EscapeDataString(calendarId)}/events" +
+            $"?timeMin={timeMin}" +
+            $"&timeMax={timeMax}" +
+            $"&singleEvents=true" +
+            $"&orderBy=startTime" +
+            $"&eventTypes=default";
+
+        string? pageToken = null;
+        do
+        {
+            var url = pageToken is null ? baseUrl : $"{baseUrl}&pageToken={Uri.EscapeDataString(pageToken)}";
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+            using var response = await _httpClient.SendAsync(request);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return null;
+            }
+
+            var content = await response.Content.ReadAsStringAsync();
+            using var jsonDoc = JsonDocument.Parse(content);
+            if (jsonDoc.RootElement.TryGetProperty("items", out var items))
+            {
+                foreach (var item in items.EnumerateArray())
+                {
+                    var calendarEvent = ParseEvent(item, calendarId);
+                    if (calendarEvent is { IsAllDay: false })
+                    {
+                        return calendarEvent;
+                    }
+                }
+            }
+
+            pageToken = jsonDoc.RootElement.TryGetProperty("nextPageToken", out var nextPageToken)
+                ? nextPageToken.GetString()
+                : null;
+        } while (!string.IsNullOrEmpty(pageToken));
+
+        return null;
     }
 
     public async Task<List<CalendarEvent>> GetEventsAsync(DateTime startDate, DateTime endDate)
     {
         var accessToken = await _authService.GetAccessTokenAsync();
-        
+
         if (string.IsNullOrEmpty(accessToken) || !_calendarIds.Any())
         {
             return new List<CalendarEvent>();
@@ -54,9 +136,9 @@ public class GoogleCalendarService : ICalendarService
     }
 
     private async Task<List<CalendarEvent>> FetchEventsForCalendarAsync(
-        string calendarId, 
-        DateTime startDate, 
-        DateTime endDate, 
+        string calendarId,
+        DateTime startDate,
+        DateTime endDate,
         string accessToken)
     {
         var timeMin = startDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
@@ -104,19 +186,19 @@ public class GoogleCalendarService : ICalendarService
         try
         {
             var id = eventElement.GetProperty("id").GetString() ?? string.Empty;
-            var summary = eventElement.TryGetProperty("summary", out var summaryProp) 
-                ? summaryProp.GetString() ?? "No Title" 
+            var summary = eventElement.TryGetProperty("summary", out var summaryProp)
+                ? summaryProp.GetString() ?? "No Title"
                 : "No Title";
-            
+
             // Clean the title by removing status indicators
             summary = CleanEventTitle(summary);
-            
-            var description = eventElement.TryGetProperty("description", out var descProp) 
-                ? descProp.GetString() 
+
+            var description = eventElement.TryGetProperty("description", out var descProp)
+                ? descProp.GetString()
                 : null;
-            
-            var location = eventElement.TryGetProperty("location", out var locProp) 
-                ? locProp.GetString() 
+
+            var location = eventElement.TryGetProperty("location", out var locProp)
+                ? locProp.GetString()
                 : null;
 
             var start = eventElement.GetProperty("start");
@@ -182,7 +264,7 @@ public class GoogleCalendarService : ICalendarService
         // "?" = Accepted
         // "?" = Declined
         var cleanTitle = title.TrimStart('?', '?', '?', ' ');
-        
+
         return string.IsNullOrWhiteSpace(cleanTitle) ? title : cleanTitle;
     }
 }

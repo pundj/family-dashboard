@@ -365,21 +365,9 @@
         if (!await GoogleAuthService.IsAuthenticatedAsync())
             return null;
 
-        var nextEvent = await CalendarService.GetNextEventAsync();
+        var nextEvent = await CalendarService.GetNextTimedEventAsync();
         if (nextEvent == null)
             return null;
-
-        if (nextEvent.IsAllDay)
-        {
-            var daysUntil = (nextEvent.StartTime.Date - DateTime.Today).Days;
-            var timeUntilLabel = daysUntil == 0 ? "today" : daysUntil == 1 ? "tomorrow" : $"in {daysUntil}d";
-            return new ScreensaverNextEventDto
-            {
-                Title = nextEvent.Title,
-                EventTime = "All Day",
-                TimeUntilLabel = timeUntilLabel
-            };
-        }
 
         var timeUntil = nextEvent.StartTime.ToUniversalTime() - DateTime.UtcNow;
         if (timeUntil.TotalMinutes < 0)
