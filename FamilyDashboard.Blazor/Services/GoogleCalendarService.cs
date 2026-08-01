@@ -26,6 +26,79 @@ public class GoogleCalendarService : ICalendarService
         _calendarIds = settings?.CalendarIds ?? new List<string>();
     }
 
+    public async Task<CalendarEvent?> GetNextEventAsync()
+    {
+        var accessToken = await _authService.GetAccessTokenAsync();
+
+        if (string.IsNullOrEmpty(accessToken) || !_calendarIds.Any())
+        {
+            return null;
+        }
+
+        var now = DateTime.UtcNow;
+        var end = now.AddDays(7);
+
+        CalendarEvent? nextEvent = null;
+
+        foreach (var calendarId in _calendarIds)
+        {
+            try
+            {
+                var candidate = await FetchNextEventForCalendarAsync(calendarId, now, end, accessToken);
+                if (candidate != null && (nextEvent == null || candidate.StartTime < nextEvent.StartTime))
+                {
+                    nextEvent = candidate;
+                }
+            }
+catch (Exception ex)
+{
+    Console.WriteLine($"Error fetching next event for calendar {calendarId}: {ex}");
+}
+        }
+
+        return nextEvent;
+    }
+
+    private async Task<CalendarEvent?> FetchNextEventForCalendarAsync(
+        string calendarId,
+        DateTime startDate,
+        DateTime endDate,
+        string accessToken)
+    {
+        var timeMin = startDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+        var timeMax = endDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+
+        var url = $"https://www.googleapis.com/calendar/v3/calendars/{Uri.EscapeDataString(calendarId)}/events" +
+                  $"?timeMin={timeMin}" +
+                  $"&timeMax={timeMax}" +
+                  $"&singleEvents=true" +
+                  $"&orderBy=startTime" +
+                  $"&maxResults=1";
+
+using var request = new HttpRequestMessage(HttpMethod.Get, url);
+request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+using var response = await _httpClient.SendAsync(request);
+
+if (!response.IsSuccessStatusCode)
+{
+    return null;
+}
+
+var content = await response.Content.ReadAsStringAsync();
+using var jsonDoc = JsonDocument.Parse(content);
+        if (jsonDoc.RootElement.TryGetProperty("items", out var items))
+        {
+            var enumerator = items.EnumerateArray();
+            if (enumerator.MoveNext())
+            {
+                return ParseEvent(enumerator.Current, calendarId);
+            }
+        }
+
+        return null;
+    }
+
     public async Task<List<CalendarEvent>> GetEventsAsync(DateTime startDate, DateTime endDate)
     {
         var accessToken = await _authService.GetAccessTokenAsync();

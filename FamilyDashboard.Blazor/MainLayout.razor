@@ -2,6 +2,9 @@
 @inject IConfiguration Configuration
 @inject IJSRuntime JsRuntime
 @inject DashboardSettingsState DashboardSettingsState
+@inject ICalendarService CalendarService
+@inject IGoogleAuthService GoogleAuthService
+@using Microsoft.JSInterop
 @implements IAsyncDisposable
 
 <PageTitle>@_familyName Family Dashboard</PageTitle>
@@ -153,6 +156,7 @@
     private FormatPreview _screensaverDateFormatPreview = FormatPreview.Valid(DefaultScreensaverDateFormat);
     private FormatPreview _screensaverTimeFormatPreview = FormatPreview.Valid(DefaultScreensaverTimeFormat);
     private DotNetObjectReference<MainLayout>? _screensaverActivationCallback;
+    private DotNetObjectReference<MainLayout>? _dotNetRef;
 
     private const string DefaultScreensaverDateTimeColor = "#d0d0d0";
     private const string DefaultScreensaverDateFormat = "ddd MMM d yyyy";
@@ -244,6 +248,8 @@
         await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateFormat", _screensaverDateFormat);
         await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverTimeFormat", _screensaverTimeFormat);
         await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaverDateTime", _showScreensaverDateTime);
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDotNetRef", _dotNetRef);
         StateHasChanged();
     }
 
@@ -353,9 +359,73 @@
         public static FormatPreview Invalid(string errorMessage) => new(false, null, errorMessage);
     }
 
+    [JSInvokable]
+    public async Task<ScreensaverNextEventDto?> GetNextEventForScreensaverAsync()
+    {
+        if (!await GoogleAuthService.IsAuthenticatedAsync())
+            return null;
+
+        var nextEvent = await CalendarService.GetNextEventAsync();
+        if (nextEvent == null)
+            return null;
+
+        if (nextEvent.IsAllDay)
+        {
+            var daysUntil = (nextEvent.StartTime.Date - DateTime.Today).Days;
+            var timeUntilLabel = daysUntil == 0 ? "today" : daysUntil == 1 ? "tomorrow" : $"in {daysUntil}d";
+            return new ScreensaverNextEventDto
+            {
+                Title = nextEvent.Title,
+                EventTime = "All Day",
+                TimeUntilLabel = timeUntilLabel
+            };
+        }
+
+        var timeUntil = nextEvent.StartTime.ToUniversalTime() - DateTime.UtcNow;
+        if (timeUntil.TotalMinutes < 0)
+            return null;
+
+        return new ScreensaverNextEventDto
+        {
+            Title = nextEvent.Title,
+            EventTime = nextEvent.StartTime.ToString("h:mm tt"),
+            TimeUntilLabel = FormatTimeUntil(timeUntil),
+            StartTimeUtc = nextEvent.StartTime.ToUniversalTime()
+        };
+    }
+
+    private static string FormatTimeUntil(TimeSpan timeUntil)
+    {
+        var totalMinutes = (int)Math.Ceiling(timeUntil.TotalMinutes);
+        var days = totalMinutes / (24 * 60);
+        var hours = totalMinutes % (24 * 60) / 60;
+        var minutes = totalMinutes % 60;
+
+        if (days > 0)
+        {
+            return hours > 0 ? $"in {days}d {hours}hr" : $"in {days}d";
+        }
+
+        if (hours > 0)
+        {
+            return minutes > 0 ? $"in {hours}hr {minutes}m" : $"in {hours}hr";
+        }
+
+        return $"in {minutes}m";
+    }
+
+    public record ScreensaverNextEventDto
+    {
+        public string Title { get; init; } = string.Empty;
+        public string EventTime { get; init; } = string.Empty;
+        public string TimeUntilLabel { get; init; } = string.Empty;
+        public DateTime? StartTimeUtc { get; init; }
+    }
+
     public async ValueTask DisposeAsync()
     {
         DashboardSettingsState.OpenRequested -= OpenSettings;
+        _dotNetRef?.Dispose();
         await JsRuntime.InvokeVoidAsync("familyDashboard.disposeInactivityTimeout");
         _screensaverActivationCallback?.Dispose();
     }
