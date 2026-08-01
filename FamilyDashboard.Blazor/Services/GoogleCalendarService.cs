@@ -83,6 +83,8 @@ public class GoogleCalendarService : ICalendarService
 
             if (!response.IsSuccessStatusCode)
             {
+                var error = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Error fetching next timed event: {response.StatusCode} - {error}");
                 return null;
             }
 
