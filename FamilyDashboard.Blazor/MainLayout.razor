@@ -389,27 +389,29 @@
         {
             Title = nextEvent.Title,
             EventTime = nextEvent.StartTime.ToString("h:mm tt"),
-            TimeUntilLabel = FormatTimeUntil(timeUntil)
+            TimeUntilLabel = FormatTimeUntil(timeUntil),
+            StartTimeUtc = nextEvent.StartTime.ToUniversalTime()
         };
     }
 
     private static string FormatTimeUntil(TimeSpan timeUntil)
     {
-        if (timeUntil.TotalDays >= 1)
+        var totalMinutes = (int)Math.Ceiling(timeUntil.TotalMinutes);
+        var days = totalMinutes / (24 * 60);
+        var hours = totalMinutes % (24 * 60) / 60;
+        var minutes = totalMinutes % 60;
+
+        if (days > 0)
         {
-            var days = (int)timeUntil.TotalDays;
-            var hours = timeUntil.Hours;
             return hours > 0 ? $"in {days}d {hours}hr" : $"in {days}d";
         }
 
-        if (timeUntil.TotalHours >= 1)
+        if (hours > 0)
         {
-            var hours = (int)timeUntil.TotalHours;
-            var minutes = timeUntil.Minutes;
             return minutes > 0 ? $"in {hours}hr {minutes}m" : $"in {hours}hr";
         }
 
-        return $"in {(int)timeUntil.TotalMinutes}m";
+        return $"in {minutes}m";
     }
 
     public record ScreensaverNextEventDto
@@ -417,6 +419,7 @@
         public string Title { get; init; } = string.Empty;
         public string EventTime { get; init; } = string.Empty;
         public string TimeUntilLabel { get; init; } = string.Empty;
+        public DateTime? StartTimeUtc { get; init; }
     }
 
     public async ValueTask DisposeAsync()
