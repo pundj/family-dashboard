@@ -50,10 +50,10 @@ public class GoogleCalendarService : ICalendarService
                     nextEvent = candidate;
                 }
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error fetching next event for calendar {calendarId}: {ex.Message}");
-            }
+catch (Exception ex)
+{
+    Console.WriteLine($"Error fetching next event for calendar {calendarId}: {ex}");
+}
         }
 
         return nextEvent;
