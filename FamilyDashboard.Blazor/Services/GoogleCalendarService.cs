@@ -1,5 +1,6 @@
 using FamilyDashboard.Blazor.Models.Calendar;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace FamilyDashboard.Blazor.Services;
@@ -7,16 +8,19 @@ namespace FamilyDashboard.Blazor.Services;
 public class GoogleCalendarService : ICalendarService
 {
     private readonly HttpClient _httpClient;
+    private readonly HttpClient _apiHttpClient;
     private readonly IConfiguration _configuration;
     private readonly IGoogleAuthService _authService;
     private readonly List<string> _calendarIds;
 
     public GoogleCalendarService(
+        HttpClient apiHttpClient,
         IHttpClientFactory httpClientFactory,
         IConfiguration configuration,
         IGoogleAuthService authService)
     {
         _httpClient = httpClientFactory.CreateClient();
+        _apiHttpClient = apiHttpClient;
         _configuration = configuration;
         _authService = authService;
 
@@ -33,12 +37,18 @@ public class GoogleCalendarService : ICalendarService
             return null;
         }
 
+        var calendarIdsForNextEvent = await GetCalendarIdsForNextEventAsync();
+        if (!calendarIdsForNextEvent.Any())
+        {
+            return null;
+        }
+
         var now = DateTime.UtcNow;
         var end = now.AddDays(7);
 
         CalendarEvent? nextEvent = null;
 
-        foreach (var calendarId in _calendarIds)
+        foreach (var calendarId in calendarIdsForNextEvent)
         {
             try
             {
@@ -55,6 +65,29 @@ public class GoogleCalendarService : ICalendarService
         }
 
         return nextEvent;
+    }
+
+    private async Task<List<string>> GetCalendarIdsForNextEventAsync()
+    {
+        try
+        {
+            var preferences = await _apiHttpClient.GetFromJsonAsync<CalendarPreferences>("api/calendar/preferences");
+            if (preferences?.Calendars is { Count: > 0 })
+            {
+                var included = preferences.Calendars.Values
+                    .Where(c => c.IncludeInNextEvent && _calendarIds.Contains(c.CalendarId))
+                    .Select(c => c.CalendarId)
+                    .ToList();
+
+                return included.Count > 0 ? included : _calendarIds;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error fetching calendar preferences for next event: {ex.Message}");
+        }
+
+        return _calendarIds;
     }
 
     private async Task<CalendarEvent?> FetchNextTimedEventForCalendarAsync(
