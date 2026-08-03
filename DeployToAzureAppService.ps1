@@ -24,6 +24,7 @@ param(
   # Blazor wwwroot/appsettings.json values (optional)
   [string]$FamilyName,
   [string]$Locale,
+  [string]$CameraViewerUrl,
   [string]$GoogleClientId,
   [string]$GoogleClientSecret,
   [string]$GoogleRedirectUri,
@@ -40,6 +41,7 @@ foreach ($kvp in $PSBoundParameters.GetEnumerator()) {
 
 $script:BlazorAppSettingsPath = Join-Path $PSScriptRoot "FamilyDashboard.Blazor\wwwroot\appsettings.json"
 $script:OriginalBlazorAppSettingsContent = $null
+$script:OriginalBlazorAppSettingsBytes = $null
 $script:RestoreBlazorAppSettings = $false
 
 function Resolve-AppServiceRuntime {
@@ -114,7 +116,8 @@ function Update-BlazorAppSettings {
     throw "Could not find $script:BlazorAppSettingsPath"
   }
 
-  $script:OriginalBlazorAppSettingsContent = Get-Content $script:BlazorAppSettingsPath -Raw
+  $script:OriginalBlazorAppSettingsBytes = Get-Content -Path $script:BlazorAppSettingsPath -AsByteStream -Raw
+  $script:OriginalBlazorAppSettingsContent = [System.Text.Encoding]::UTF8.GetString($script:OriginalBlazorAppSettingsBytes)
   $script:RestoreBlazorAppSettings = $true
 
   $settings = $script:OriginalBlazorAppSettingsContent | ConvertFrom-Json -AsHashtable
@@ -125,6 +128,21 @@ function Update-BlazorAppSettings {
 
   if ($script:InputParameters.ContainsKey("FamilyName")) { $settings["FamilyName"] = $FamilyName }
   if ($script:InputParameters.ContainsKey("Locale")) { $settings["Locale"] = $Locale }
+if ($script:InputParameters.ContainsKey("CameraViewerUrl")) {
+  if ([string]::IsNullOrWhiteSpace($CameraViewerUrl)) {
+    $settings["CameraViewerUrl"] = $null
+  }
+  else {
+    $trimmedCameraViewerUrl = $CameraViewerUrl.Trim()
+    $cameraViewerUri = $null
+    if (-not [Uri]::TryCreate($trimmedCameraViewerUrl, [UriKind]::Absolute, [ref]$cameraViewerUri) -or
+        $cameraViewerUri.Scheme -notin @([Uri]::UriSchemeHttp, [Uri]::UriSchemeHttps)) {
+      throw "CameraViewerUrl must be an absolute http/https URL (e.g. https://my.wyze.com/home)."
+    }
+
+    $settings["CameraViewerUrl"] = $cameraViewerUri.ToString()
+  }
+}
   if ($script:InputParameters.ContainsKey("GoogleClientId")) { $settings["GoogleOAuth"]["ClientId"] = $GoogleClientId }
   if ($script:InputParameters.ContainsKey("GoogleClientSecret")) { $settings["GoogleOAuth"]["ClientSecret"] = $GoogleClientSecret }
   if ($script:InputParameters.ContainsKey("GoogleRedirectUri")) { $settings["GoogleOAuth"]["RedirectUri"] = $GoogleRedirectUri }
@@ -141,10 +159,17 @@ function Update-BlazorAppSettings {
 }
 
 function Restore-BlazorAppSettingsIfNeeded {
-  if ($script:RestoreBlazorAppSettings -and $null -ne $script:OriginalBlazorAppSettingsContent) {
-    Set-Content -Path $script:BlazorAppSettingsPath -Value $script:OriginalBlazorAppSettingsContent -Encoding UTF8
+  if ($script:RestoreBlazorAppSettings) {
+    if ($null -ne $script:OriginalBlazorAppSettingsBytes) {
+      [System.IO.File]::WriteAllBytes($script:BlazorAppSettingsPath, $script:OriginalBlazorAppSettingsBytes)
+    }
+    elseif ($null -ne $script:OriginalBlazorAppSettingsContent) {
+      Set-Content -Path $script:BlazorAppSettingsPath -Value $script:OriginalBlazorAppSettingsContent -Encoding UTF8 -NoNewline
+    }
+
     $script:RestoreBlazorAppSettings = $false
     $script:OriginalBlazorAppSettingsContent = $null
+    $script:OriginalBlazorAppSettingsBytes = $null
   }
 }
 
