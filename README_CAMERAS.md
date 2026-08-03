@@ -18,10 +18,10 @@ When that policy is present, browsers block embedding and there is no client-sid
 
 ## Configuration
 
-Set `CameraViewerUrl` as a **top-level** key in your Blazor client config file:
+Set `CameraViewerUrl` as a **top-level** key in your Blazor client config file (or an environment override file you create):
 
 - `FamilyDashboard.Blazor/wwwroot/appsettings.json`
-- `FamilyDashboard.Blazor/wwwroot/appsettings.Development.json`
+- `FamilyDashboard.Blazor/wwwroot/appsettings.{Environment}.json` (optional; create for environment-specific overrides)
 
 Example:
 
