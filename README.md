@@ -79,7 +79,8 @@ The app will be available at http://localhost:7104 and persists API data in `Fam
 - **Dashboard Interface** - Tabbed interface for different information types
 - **Smart Home Integration** - Per-user SmartThings token storage with server-side proxying
 - **Weather Forecast** - Local weather display (configurable)
-- **Calendar** - Google Calendar embed (configurable)
+- **Calendar** - Google Calendar OAuth integration with Day/Week/Month views (configurable)
+- **Cameras** - Optional Cameras tab that launches a configured camera viewer URL in a popup window
 - **Random Quote/Joke** - Entertainment tiles with auto-refresh
 - **Auto-refresh** - Tiles automatically update at configured intervals
 - **Inactivity Screen Timeout** - A configurable screen-darkening timeout that wakes when the screen is touched
@@ -90,9 +91,11 @@ The application uses configuration files for non-secret settings and server-side
 
 - **SmartThings**: Configure users in-app (Smart Home tab) and store SmartThings tokens server-side in the API database (encrypted via ASP.NET Data Protection).
 - **Weather**: Requires `Locale` configuration in `FamilyDashboard.Blazor/wwwroot/appsettings.json`
-- **Calendar**: Configure `GoogleOAuth` for private calendar access or `GoogleCalendarEmbedCode` for an embedded calendar.
-- **Cameras**: Set `CameraViewerUrl` to an absolute `http`/`https` URL to show a Cameras tab with an embedded iframe viewer.
+- **Calendar**: Configure `GoogleOAuth` for private calendar access (or use `GoogleCalendarEmbedCode` for legacy embedded calendar mode).
+- **Cameras**: Set `CameraViewerUrl` as a **top-level** key in `FamilyDashboard.Blazor/wwwroot/appsettings*.json` using an absolute `http`/`https` URL. The Cameras tab opens this URL in a popup window.
 - **Screen timeout and screensaver display**: Select the gear button in the dashboard header to configure **Screen timeout (minutes)** plus the screensaver's date/time display options. The timeout defaults to five minutes, accepts values from 1 to 1,440 minutes, and all dashboard display preferences are stored in that browser's local storage. When the timeout expires, touch or click the dark screen to resume the dashboard.
+
+For camera-specific setup and troubleshooting, see [README_CAMERAS.md](README_CAMERAS.md).
 
 ## Project Structure
 
