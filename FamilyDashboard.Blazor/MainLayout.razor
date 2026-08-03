@@ -2,6 +2,9 @@
 @inject IConfiguration Configuration
 @inject IJSRuntime JsRuntime
 @inject DashboardSettingsState DashboardSettingsState
+@inject ICalendarService CalendarService
+@inject IGoogleAuthService GoogleAuthService
+@using Microsoft.JSInterop
 @implements IAsyncDisposable
 
 <PageTitle>@_familyName Family Dashboard</PageTitle>
@@ -77,6 +80,44 @@
                                            type="color"
                                            @bind="_screensaverDateTimeColorDraft" />
                                 </div>
+                                <div class="mt-3">
+                                    <label for="screensaver-date-format" class="form-label">Date format</label>
+                                    <input id="screensaver-date-format"
+                                           class="form-control @(_screensaverDateFormatPreview.IsValid ? "is-valid" : "is-invalid")"
+                                           type="text"
+                                           @bind="_screensaverDateFormatDraft"
+                                           @bind:event="oninput"
+                                           @bind:after="UpdateDateFormatPreview"
+                                           aria-describedby="screensaver-date-format-help screensaver-date-format-feedback" />
+                                    <div id="screensaver-date-format-help" class="form-text">Use yyyy, yy, MMMM, MMM, MM, M, dddd, ddd, dd, or d. Punctuation and spaces are allowed.</div>
+                                    @if (_screensaverDateFormatPreview.IsValid)
+                                    {
+                                        <div id="screensaver-date-format-feedback" class="form-text text-success">Example: @_screensaverDateFormatPreview.Example</div>
+                                    }
+                                    else
+                                    {
+                                        <div id="screensaver-date-format-feedback" class="invalid-feedback d-block">@_screensaverDateFormatPreview.ErrorMessage</div>
+                                    }
+                                </div>
+                                <div class="mt-3">
+                                    <label for="screensaver-time-format" class="form-label">Time format</label>
+                                    <input id="screensaver-time-format"
+                                           class="form-control @(_screensaverTimeFormatPreview.IsValid ? "is-valid" : "is-invalid")"
+                                           type="text"
+                                           @bind="_screensaverTimeFormatDraft"
+                                           @bind:event="oninput"
+                                           @bind:after="UpdateTimeFormatPreview"
+                                           aria-describedby="screensaver-time-format-help screensaver-time-format-feedback" />
+                                    <div id="screensaver-time-format-help" class="form-text">Use HH, H, hh, h, mm, m, ss, s, tt, or t. Punctuation and spaces are allowed.</div>
+                                    @if (_screensaverTimeFormatPreview.IsValid)
+                                    {
+                                        <div id="screensaver-time-format-feedback" class="form-text text-success">Example: @_screensaverTimeFormatPreview.Example</div>
+                                    }
+                                    else
+                                    {
+                                        <div id="screensaver-time-format-feedback" class="invalid-feedback d-block">@_screensaverTimeFormatPreview.ErrorMessage</div>
+                                    }
+                                </div>
                             }
                         </div>
                     }
@@ -84,7 +125,9 @@
             </div>
             <div class="dashboard-settings-actions">
                 <button class="btn btn-outline-secondary" @onclick="CloseSettings">Cancel</button>
-                <button class="btn btn-primary" @onclick="SaveSettingsAsync">Save</button>
+                <button class="btn btn-primary"
+                        @onclick="SaveSettingsAsync"
+                        disabled="@(_showScreensaverDateTimeDraft && (!_screensaverDateFormatPreview.IsValid || !_screensaverTimeFormatPreview.IsValid))">Save</button>
             </div>
         </div>
     </div>
@@ -106,8 +149,44 @@
     private bool _showScreensaverDateTimeDraft;
     private string _screensaverDateTimeColor = DefaultScreensaverDateTimeColor;
     private string _screensaverDateTimeColorDraft = DefaultScreensaverDateTimeColor;
+    private string _screensaverDateFormat = DefaultScreensaverDateFormat;
+    private string _screensaverDateFormatDraft = DefaultScreensaverDateFormat;
+    private string _screensaverTimeFormat = DefaultScreensaverTimeFormat;
+    private string _screensaverTimeFormatDraft = DefaultScreensaverTimeFormat;
+    private FormatPreview _screensaverDateFormatPreview = FormatPreview.Valid(DefaultScreensaverDateFormat);
+    private FormatPreview _screensaverTimeFormatPreview = FormatPreview.Valid(DefaultScreensaverTimeFormat);
+    private DotNetObjectReference<MainLayout>? _screensaverActivationCallback;
+    private DotNetObjectReference<MainLayout>? _dotNetRef;
 
     private const string DefaultScreensaverDateTimeColor = "#d0d0d0";
+    private const string DefaultScreensaverDateFormat = "ddd MMM d yyyy";
+    private const string DefaultScreensaverTimeFormat = "h:mm:ss tt";
+    private static readonly IReadOnlyList<FormatToken> ScreensaverDateFormatTokens =
+    [
+        new("yyyy", dateTime => dateTime.Year.ToString()),
+        new("MMMM", dateTime => dateTime.ToString("MMMM")),
+        new("dddd", dateTime => dateTime.ToString("dddd")),
+        new("MMM", dateTime => dateTime.ToString("MMM")),
+        new("ddd", dateTime => dateTime.ToString("ddd")),
+        new("yy", dateTime => dateTime.ToString("yy")),
+        new("MM", dateTime => dateTime.Month.ToString("00")),
+        new("dd", dateTime => dateTime.Day.ToString("00")),
+        new("M", dateTime => dateTime.Month.ToString()),
+        new("d", dateTime => dateTime.Day.ToString())
+    ];
+    private static readonly IReadOnlyList<FormatToken> ScreensaverTimeFormatTokens =
+    [
+        new("HH", dateTime => dateTime.Hour.ToString("00")),
+        new("hh", dateTime => ((dateTime.Hour % 12) == 0 ? 12 : dateTime.Hour % 12).ToString("00")),
+        new("mm", dateTime => dateTime.Minute.ToString("00")),
+        new("ss", dateTime => dateTime.Second.ToString("00")),
+        new("tt", dateTime => dateTime.ToString("tt").ToUpperInvariant()),
+        new("H", dateTime => dateTime.Hour.ToString()),
+        new("h", dateTime => ((dateTime.Hour % 12) == 0 ? 12 : dateTime.Hour % 12).ToString()),
+        new("m", dateTime => dateTime.Minute.ToString()),
+        new("s", dateTime => dateTime.Second.ToString()),
+        new("t", dateTime => dateTime.ToString("tt")[..1].ToUpperInvariant())
+    ];
 
     protected override void OnInitialized()
     {
@@ -143,15 +222,34 @@
         if (IsHexColor(storedScreensaverDateTimeColor))
             _screensaverDateTimeColor = storedScreensaverDateTimeColor!;
 
+        var storedScreensaverDateFormat = await JsRuntime.InvokeAsync<string?>("familyDashboard.getScreensaverDateFormat");
+        if (CreateFormatPreview(storedScreensaverDateFormat, ScreensaverDateFormatTokens).IsValid)
+            _screensaverDateFormat = storedScreensaverDateFormat!;
+
+        var storedScreensaverTimeFormat = await JsRuntime.InvokeAsync<string?>("familyDashboard.getScreensaverTimeFormat");
+        if (CreateFormatPreview(storedScreensaverTimeFormat, ScreensaverTimeFormatTokens).IsValid)
+            _screensaverTimeFormat = storedScreensaverTimeFormat!;
+
         _inactivityTimeoutDraftMinutes = _inactivityTimeoutMinutes;
         _showTopTilesDraft = _showTopTiles;
         _showScreensaverDraft = _showScreensaver;
         _showScreensaverDateTimeDraft = _showScreensaverDateTime;
         _screensaverDateTimeColorDraft = _screensaverDateTimeColor;
+        _screensaverDateFormatDraft = _screensaverDateFormat;
+        _screensaverTimeFormatDraft = _screensaverTimeFormat;
+        UpdateFormatPreviews();
+        _screensaverActivationCallback = DotNetObjectReference.Create(this);
+        await JsRuntime.InvokeVoidAsync(
+            "familyDashboard.setScreensaverActivationCallback",
+            _screensaverActivationCallback);
         await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaver", _showScreensaver);
         await JsRuntime.InvokeVoidAsync("familyDashboard.configureInactivityTimeout", _inactivityTimeoutMinutes);
-        await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaverDateTime", _showScreensaverDateTime);
         await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateTimeColor", _screensaverDateTimeColor);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateFormat", _screensaverDateFormat);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverTimeFormat", _screensaverTimeFormat);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaverDateTime", _showScreensaverDateTime);
+        _dotNetRef = DotNetObjectReference.Create(this);
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDotNetRef", _dotNetRef);
         StateHasChanged();
     }
 
@@ -162,6 +260,9 @@
         _showScreensaverDraft = _showScreensaver;
         _showScreensaverDateTimeDraft = _showScreensaverDateTime;
         _screensaverDateTimeColorDraft = _screensaverDateTimeColor;
+        _screensaverDateFormatDraft = _screensaverDateFormat;
+        _screensaverTimeFormatDraft = _screensaverTimeFormat;
+        UpdateFormatPreviews();
         _showSettings = true;
         StateHasChanged();
     }
@@ -171,8 +272,19 @@
         _showSettings = false;
     }
 
+    [JSInvokable]
+    public Task OnScreensaverShown()
+    {
+        return DashboardSettingsState.NotifyScreensaverShownAsync();
+    }
+
     private async Task SaveSettingsAsync()
     {
+        UpdateFormatPreviews();
+        if (_showScreensaverDateTimeDraft &&
+            (!_screensaverDateFormatPreview.IsValid || !_screensaverTimeFormatPreview.IsValid))
+            return;
+
         _inactivityTimeoutMinutes = Math.Clamp(
             _inactivityTimeoutDraftMinutes,
             1,
@@ -187,15 +299,122 @@
         await JsRuntime.InvokeVoidAsync("familyDashboard.setShowScreensaverDateTime", _showScreensaverDateTime);
         _screensaverDateTimeColor = _screensaverDateTimeColorDraft;
         await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateTimeColor", _screensaverDateTimeColor);
+        _screensaverDateFormat = _screensaverDateFormatDraft;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverDateFormat", _screensaverDateFormat);
+        _screensaverTimeFormat = _screensaverTimeFormatDraft;
+        await JsRuntime.InvokeVoidAsync("familyDashboard.setScreensaverTimeFormat", _screensaverTimeFormat);
         _showSettings = false;
     }
 
     private static bool IsHexColor(string? value) =>
         value is { Length: 7 } && value[0] == '#' && value[1..].All(Uri.IsHexDigit);
 
+    private void UpdateFormatPreviews()
+    {
+        UpdateDateFormatPreview();
+        UpdateTimeFormatPreview();
+    }
+
+    private void UpdateDateFormatPreview() =>
+        _screensaverDateFormatPreview = CreateFormatPreview(_screensaverDateFormatDraft, ScreensaverDateFormatTokens);
+
+    private void UpdateTimeFormatPreview() =>
+        _screensaverTimeFormatPreview = CreateFormatPreview(_screensaverTimeFormatDraft, ScreensaverTimeFormatTokens);
+
+    private static FormatPreview CreateFormatPreview(string? format, IReadOnlyList<FormatToken> tokens)
+    {
+        if (string.IsNullOrWhiteSpace(format))
+            return FormatPreview.Invalid("Enter at least one format token.");
+
+        var now = DateTime.Now;
+        var preview = new System.Text.StringBuilder();
+        var containsToken = false;
+        for (var index = 0; index < format.Length;)
+        {
+            if (!char.IsLetter(format[index]))
+            {
+                preview.Append(format[index++]);
+                continue;
+            }
+
+            var token = tokens.FirstOrDefault(candidate =>
+                format.AsSpan(index).StartsWith(candidate.Value, StringComparison.Ordinal));
+            if (token is null)
+                return FormatPreview.Invalid($"Unsupported token starting at '{format[index..]}'.");
+
+            containsToken = true;
+            preview.Append(token.Format(now));
+            index += token.Value.Length;
+        }
+
+        return containsToken
+            ? FormatPreview.Valid(preview.ToString())
+            : FormatPreview.Invalid("Enter at least one format token.");
+    }
+
+    private sealed record FormatToken(string Value, Func<DateTime, string> Format);
+    private sealed record FormatPreview(bool IsValid, string? Example, string? ErrorMessage)
+    {
+        public static FormatPreview Valid(string example) => new(true, example, null);
+        public static FormatPreview Invalid(string errorMessage) => new(false, null, errorMessage);
+    }
+
+    [JSInvokable]
+    public async Task<ScreensaverNextEventDto?> GetNextEventForScreensaverAsync()
+    {
+        if (!await GoogleAuthService.IsAuthenticatedAsync())
+            return null;
+
+        var nextEvent = await CalendarService.GetNextTimedEventAsync();
+        if (nextEvent == null)
+            return null;
+
+        var timeUntil = nextEvent.StartTime.ToUniversalTime() - DateTime.UtcNow;
+        if (timeUntil.TotalMinutes < 0)
+            return null;
+
+        return new ScreensaverNextEventDto
+        {
+            Title = nextEvent.Title,
+            EventTime = nextEvent.StartTime.ToString("h:mm tt"),
+            TimeUntilLabel = FormatTimeUntil(timeUntil),
+            StartTimeUtc = nextEvent.StartTime.ToUniversalTime()
+        };
+    }
+
+    private static string FormatTimeUntil(TimeSpan timeUntil)
+    {
+        var totalMinutes = (int)Math.Ceiling(timeUntil.TotalMinutes);
+        var days = totalMinutes / (24 * 60);
+        var hours = totalMinutes % (24 * 60) / 60;
+        var minutes = totalMinutes % 60;
+
+        if (days > 0)
+        {
+            return hours > 0 ? $"in {days}d {hours}hr" : $"in {days}d";
+        }
+
+        if (hours > 0)
+        {
+            return minutes > 0 ? $"in {hours}hr {minutes}m" : $"in {hours}hr";
+        }
+
+        return $"in {minutes}m";
+    }
+
+    public record ScreensaverNextEventDto
+    {
+        public string Title { get; init; } = string.Empty;
+        public string EventTime { get; init; } = string.Empty;
+        public string TimeUntilLabel { get; init; } = string.Empty;
+        public DateTime? StartTimeUtc { get; init; }
+    }
+
     public async ValueTask DisposeAsync()
     {
         DashboardSettingsState.OpenRequested -= OpenSettings;
+        _dotNetRef?.Dispose();
         await JsRuntime.InvokeVoidAsync("familyDashboard.disposeInactivityTimeout");
+        _screensaverActivationCallback?.Dispose();
     }
 }

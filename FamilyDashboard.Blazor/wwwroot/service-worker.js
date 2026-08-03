@@ -1,4 +1,12 @@
-// In development, always fetch from the network and do not enable offline support.
-// This is because caching would make development more difficult (changes would not
-// be reflected on the first load after each change).
-self.addEventListener('fetch', () => { });
+// In development, remove offline caches left by a previous published build so
+// local changes are always loaded from the development server.
+self.addEventListener('install', () => self.skipWaiting());
+self.addEventListener('activate', event => event.waitUntil(
+    Promise.all([
+        self.clients.claim(),
+        caches.keys().then(cacheKeys => Promise.all(
+            cacheKeys
+                .filter(cacheKey => cacheKey.startsWith('offline-cache-'))
+                .map(cacheKey => caches.delete(cacheKey))))
+    ])
+));

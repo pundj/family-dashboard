@@ -7,6 +7,10 @@ import '@fontsource/dseg14/classic-400.css'
 import 'bootstrap'
 
 const defaultInactivityTimeoutMinutes = 5;
+const defaultScreensaverDateFormat = 'ddd MMM d yyyy';
+const defaultScreensaverTimeFormat = 'h:mm:ss tt';
+const screensaverNextEventRefreshMilliseconds = 30 * 60 * 1000;
+const dateTimeFormatTokenPattern = /yyyy|MMMM|dddd|MMM|ddd|yy|MM|dd|HH|hh|mm|ss|tt|M|d|H|h|m|s|t/g;
 let inactivityTimeoutId;
 let inactivityTimeoutMilliseconds = defaultInactivityTimeoutMinutes * 60 * 1000;
 let inactivityOverlay;
@@ -18,6 +22,17 @@ let screensaverDateTimeIntervalId;
 let screensaverEnabled = false;
 let showScreensaverDateTime = false;
 let inactivityListenersRegistered = false;
+let screensaverDateFormat = defaultScreensaverDateFormat;
+let screensaverTimeFormat = defaultScreensaverTimeFormat;
+let screensaverActivationCallback;
+let screensaverDotNetRef = null;
+let screensaverNextEventContainer;
+let screensaverCalendarIconTime;
+let screensaverEventTitle;
+let screensaverEventCountdown;
+let screensaverNextEventStartTime;
+let screensaverNextEventCountdownIntervalId;
+let screensaverNextEventRefreshIntervalId;
 const inactivityActivityEvents = ['pointerdown', 'keydown', 'touchstart'];
 function ensureInactivityOverlay() {
     if (inactivityOverlay) {
@@ -50,7 +65,32 @@ function ensureInactivityOverlay() {
     screensaverClock.append(screensaverTime, screensaverMeridiem);
     screensaverDateTimeContainer.append(screensaverDate, screensaverClock);
 
+    screensaverNextEventContainer = document.createElement('div');
+    screensaverNextEventContainer.className = 'screensaver-next-event';
+    screensaverNextEventContainer.setAttribute('hidden', '');
+
+    const calendarIcon = document.createElement('div');
+    calendarIcon.className = 'screensaver-calendar-icon';
+
+    const calendarIconHeader = document.createElement('div');
+    calendarIconHeader.className = 'screensaver-calendar-icon-header';
+    calendarIconHeader.textContent = 'NEXT';
+
+    screensaverCalendarIconTime = document.createElement('div');
+    screensaverCalendarIconTime.className = 'screensaver-calendar-icon-time';
+
+    calendarIcon.append(calendarIconHeader, screensaverCalendarIconTime);
+
+    screensaverEventTitle = document.createElement('div');
+    screensaverEventTitle.className = 'screensaver-event-title';
+
+    screensaverEventCountdown = document.createElement('div');
+    screensaverEventCountdown.className = 'screensaver-event-countdown';
+
+    screensaverNextEventContainer.append(calendarIcon, screensaverEventTitle, screensaverEventCountdown);
+
     inactivityOverlay.appendChild(screensaverDateTimeContainer);
+    inactivityOverlay.appendChild(screensaverNextEventContainer);
     document.body.appendChild(inactivityOverlay);
 }
 
@@ -61,37 +101,68 @@ function updateScreensaverDateTime() {
 
     const now = new Date();
     screensaverDate.dateTime = now.toISOString().slice(0, 10);
-    const dateParts = new Intl.DateTimeFormat(undefined, {
-        weekday: 'short',
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric'
-    }).formatToParts(now);
-    screensaverDate.textContent = ['weekday', 'month', 'day', 'year']
-        .map(type => dateParts.find(part => part.type === type)?.value)
-        .filter(Boolean)
-        .join(' ')
-        .toUpperCase();
+    const formattedDate = formatDateTime(now, screensaverDateFormat);
+    screensaverDate.textContent = screensaverDateFormat === defaultScreensaverDateFormat
+        ? formattedDate.toUpperCase()
+        : formattedDate;
     screensaverTime.dateTime = now.toTimeString().slice(0, 8);
-    const timeParts = new Intl.DateTimeFormat(undefined, {
-        hour: 'numeric',
-        minute: '2-digit',
-        second: '2-digit'
-    }).formatToParts(now);
-    screensaverTime.textContent = timeParts
-        .filter(part => part.type !== 'dayPeriod')
-        .map(part => part.value)
-        .join('')
-        .trim();
-    screensaverMeridiem.textContent = timeParts
-        .filter(part => part.type === 'dayPeriod')
-        .map(part => part.value)
-        .join('')
-        .toUpperCase();
-
+    const formattedTime = formatTime(now, screensaverTimeFormat);
+    screensaverTime.textContent = formattedTime.value;
+    screensaverMeridiem.textContent = formattedTime.meridiem;
+    screensaverMeridiem.hidden = !formattedTime.meridiem;
 }
 
-function showDarkScreen() {
+function formatTime(date, pattern) {
+    const hasMeridiem = /tt|t/.test(pattern);
+    return {
+        value: formatDateTime(date, pattern.replace(/tt|t/g, '')).trim(),
+        meridiem: hasMeridiem ? getDayPeriod(date) : ''
+    };
+}
+
+function formatDateTime(date, pattern) {
+    const safePattern = pattern || '';
+    const tokenValues = {
+        yyyy: String(date.getFullYear()),
+        yy: String(date.getFullYear()).slice(-2),
+        MMMM: getLocalizedPart(date, { month: 'long' }),
+        MMM: getLocalizedPart(date, { month: 'short' }),
+        MM: String(date.getMonth() + 1).padStart(2, '0'),
+        M: String(date.getMonth() + 1),
+        dddd: getLocalizedPart(date, { weekday: 'long' }),
+        ddd: getLocalizedPart(date, { weekday: 'short' }),
+        dd: String(date.getDate()).padStart(2, '0'),
+        d: String(date.getDate()),
+        HH: String(date.getHours()).padStart(2, '0'),
+        H: String(date.getHours()),
+        hh: String((date.getHours() % 12) || 12).padStart(2, '0'),
+        h: String((date.getHours() % 12) || 12),
+        mm: String(date.getMinutes()).padStart(2, '0'),
+        m: String(date.getMinutes()),
+        ss: String(date.getSeconds()).padStart(2, '0'),
+        s: String(date.getSeconds()),
+        tt: getDayPeriod(date),
+        t: getDayPeriod(date).charAt(0)
+    };
+
+    return safePattern.replace(dateTimeFormatTokenPattern, token => tokenValues[token]);
+}
+
+function getLocalizedPart(date, options) {
+    return new Intl.DateTimeFormat(undefined, options).format(date);
+}
+
+function getDayPeriod(date) {
+    return new Intl.DateTimeFormat(undefined, {
+        hour: 'numeric',
+        hour12: true
+    }).formatToParts(date)
+        .find(part => part.type === 'dayPeriod')
+        ?.value
+        ?.toUpperCase() ?? '';
+}
+
+async function showDarkScreen() {
     ensureInactivityOverlay();
     inactivityOverlay.classList.add('is-visible');
     if (showScreensaverDateTime) {
@@ -99,7 +170,14 @@ function showDarkScreen() {
         updateScreensaverDateTime();
         screensaverDateTimeIntervalId = window.setInterval(updateScreensaverDateTime, 1000);
     }
+
+    startScreensaverNextEventRefresh();
+
     inactivityOverlay.focus();
+    try {
+        await screensaverActivationCallback?.invokeMethodAsync('OnScreensaverShown');
+    } catch {
+    }
 }
 
 function resetInactivityTimer() {
@@ -108,14 +186,82 @@ function resetInactivityTimer() {
         return;
     }
 
-    inactivityTimeoutId = window.setTimeout(showDarkScreen, inactivityTimeoutMilliseconds);
+    inactivityTimeoutId = window.setTimeout(() => {
+        void showDarkScreen();
+    }, inactivityTimeoutMilliseconds);
 }
 
 function wakeScreen() {
     inactivityOverlay?.classList.remove('is-visible');
     window.clearInterval(screensaverDateTimeIntervalId);
     screensaverDateTimeIntervalId = undefined;
+    clearScreensaverNextEventCountdown();
+    clearScreensaverNextEventRefresh();
+    screensaverNextEventContainer?.setAttribute('hidden', '');
     resetInactivityTimer();
+}
+
+function startScreensaverNextEventRefresh() {
+    clearScreensaverNextEventRefresh();
+    requestScreensaverNextEvent();
+    if (screensaverDotNetRef) {
+        screensaverNextEventRefreshIntervalId = window.setInterval(
+            requestScreensaverNextEvent,
+            screensaverNextEventRefreshMilliseconds);
+    }
+}
+
+function clearScreensaverNextEventRefresh() {
+    window.clearInterval(screensaverNextEventRefreshIntervalId);
+    screensaverNextEventRefreshIntervalId = undefined;
+}
+
+function requestScreensaverNextEvent() {
+    if (!screensaverDotNetRef) {
+        return;
+    }
+
+    screensaverNextEventContainer?.setAttribute('hidden', '');
+    screensaverDotNetRef.invokeMethodAsync('GetNextEventForScreensaverAsync')
+        .then(eventData => {
+            window.familyDashboard.setNextEvent(eventData);
+        })
+        .catch(() => {
+            clearScreensaverNextEventCountdown();
+            screensaverNextEventContainer?.setAttribute('hidden', '');
+        });
+}
+
+function clearScreensaverNextEventCountdown() {
+    window.clearInterval(screensaverNextEventCountdownIntervalId);
+    screensaverNextEventCountdownIntervalId = undefined;
+    screensaverNextEventStartTime = undefined;
+}
+
+function updateScreensaverNextEventCountdown() {
+    if (!screensaverEventCountdown || !screensaverNextEventStartTime) {
+        return;
+    }
+
+    const millisecondsUntil = screensaverNextEventStartTime - Date.now();
+    if (millisecondsUntil <= 0) {
+        clearScreensaverNextEventCountdown();
+        requestScreensaverNextEvent();
+        return;
+    }
+
+    const totalMinutes = Math.ceil(millisecondsUntil / 60_000);
+    const days = Math.floor(totalMinutes / (24 * 60));
+    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
+    const minutes = totalMinutes % 60;
+
+    if (days > 0) {
+        screensaverEventCountdown.textContent = hours > 0 ? `in ${days}d ${hours}hr` : `in ${days}d`;
+    } else if (hours > 0) {
+        screensaverEventCountdown.textContent = minutes > 0 ? `in ${hours}hr ${minutes}m` : `in ${hours}hr`;
+    } else {
+        screensaverEventCountdown.textContent = `in ${minutes}m`;
+    }
 }
 
 function registerInactivityListeners() {
@@ -150,6 +296,11 @@ window.familyDashboard = {
     getShowScreensaver: () => window.localStorage.getItem('show_screensaver'),
     getShowScreensaverDateTime: () => window.localStorage.getItem('show_screensaver_date_time'),
     getScreensaverDateTimeColor: () => window.localStorage.getItem('screensaver_date_time_color'),
+    getScreensaverDateFormat: () => window.localStorage.getItem('screensaver_date_format'),
+    getScreensaverTimeFormat: () => window.localStorage.getItem('screensaver_time_format'),
+    setScreensaverActivationCallback: callback => {
+        screensaverActivationCallback = callback;
+    },
     configureInactivityTimeout,
     setInactivityTimeoutMinutes: timeoutMinutes => {
         window.localStorage.setItem('inactivity_timeout_minutes', timeoutMinutes);
@@ -164,11 +315,27 @@ window.familyDashboard = {
         } else {
             window.clearTimeout(inactivityTimeoutId);
             inactivityOverlay?.classList.remove('is-visible');
+            clearScreensaverNextEventCountdown();
+            clearScreensaverNextEventRefresh();
         }
     },
     setScreensaverDateTimeColor: color => {
         window.localStorage.setItem('screensaver_date_time_color', color);
         inactivityOverlay?.style.setProperty('--screensaver-date-time-color', color);
+    },
+    setScreensaverDateFormat: format => {
+        screensaverDateFormat = format || defaultScreensaverDateFormat;
+        window.localStorage.setItem('screensaver_date_format', screensaverDateFormat);
+        if (showScreensaverDateTime) {
+            updateScreensaverDateTime();
+        }
+    },
+    setScreensaverTimeFormat: format => {
+        screensaverTimeFormat = format || defaultScreensaverTimeFormat;
+        window.localStorage.setItem('screensaver_time_format', screensaverTimeFormat);
+        if (showScreensaverDateTime) {
+            updateScreensaverDateTime();
+        }
     },
     setShowScreensaverDateTime: enabled => {
         showScreensaverDateTime = enabled;
@@ -185,14 +352,40 @@ window.familyDashboard = {
             }
         }
     },
+    setScreensaverDotNetRef: ref => {
+        screensaverDotNetRef = ref;
+    },
+    setNextEvent: eventData => {
+        if (!screensaverNextEventContainer) return;
+        clearScreensaverNextEventCountdown();
+        if (!eventData) {
+            screensaverNextEventContainer.setAttribute('hidden', '');
+            return;
+        }
+        if (screensaverCalendarIconTime) screensaverCalendarIconTime.textContent = eventData.eventTime;
+        if (screensaverEventTitle) screensaverEventTitle.textContent = eventData.title;
+        if (screensaverEventCountdown) screensaverEventCountdown.textContent = eventData.timeUntilLabel;
+        screensaverNextEventContainer.removeAttribute('hidden');
+
+        const startTime = eventData.startTimeUtc ? new Date(eventData.startTimeUtc) : undefined;
+        if (startTime && !Number.isNaN(startTime.getTime())) {
+            screensaverNextEventStartTime = startTime.getTime();
+            updateScreensaverNextEventCountdown();
+            screensaverNextEventCountdownIntervalId = window.setInterval(updateScreensaverNextEventCountdown, 1000);
+        }
+    },
     disposeInactivityTimeout: () => {
+        screensaverActivationCallback = undefined;
         window.clearTimeout(inactivityTimeoutId);
         window.clearInterval(screensaverDateTimeIntervalId);
+        clearScreensaverNextEventCountdown();
+        clearScreensaverNextEventRefresh();
         for (const eventName of inactivityActivityEvents) {
             document.removeEventListener(eventName, resetInactivityTimer);
         }
 
         inactivityListenersRegistered = false;
+        screensaverDotNetRef = null;
         inactivityOverlay?.remove();
         inactivityOverlay = undefined;
     }

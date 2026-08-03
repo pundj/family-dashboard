@@ -5,6 +5,7 @@
 @inject IConfiguration Configuration
 @inject IJSRuntime JsRuntime
 @inject HttpClient HttpClient
+@inject DashboardSettingsState DashboardSettingsState
 @implements IDisposable
 
 <div class="calendar-container">
@@ -107,6 +108,14 @@
                                    class="color-picker" />
                             <span class="calendar-name">@calendar.DisplayName</span>
                         </div>
+                        <div class="calendar-next-event-setting">
+                            <label class="calendar-next-event-label">
+                                <input type="checkbox"
+                                       checked="@calendar.IncludeInNextEvent"
+                                       @onchange="e => ToggleCalendarNextEvent(calendar.CalendarId, (bool)e.Value!)" />
+                                <span>Include in screensaver next event</span>
+                            </label>
+                        </div>
                     </div>
                 }
                 <div class="settings-actions">
@@ -196,6 +205,7 @@
     protected override async Task OnInitializedAsync()
     {
         AuthService.OnAuthStateChanged += HandleAuthStateChanged;
+        DashboardSettingsState.ScreensaverShown += HandleScreensaverShown;
         
         _isAuthenticated = await AuthService.IsAuthenticatedAsync();
         
@@ -448,6 +458,15 @@
         return calendarId;
     }
 
+    private async Task ToggleCalendarNextEvent(string calendarId, bool includeInNextEvent)
+    {
+        if (_calendarPreferences.Calendars.TryGetValue(calendarId, out var settings))
+        {
+            settings.IncludeInNextEvent = includeInNextEvent;
+            await SavePreferencesAsync();
+        }
+    }
+
     private async Task ToggleCalendarVisibility(string calendarId, bool isVisible)
     {
         if (_calendarPreferences.Calendars.TryGetValue(calendarId, out var settings))
@@ -632,6 +651,17 @@
         }
     }
 
+    private Task HandleScreensaverShown()
+    {
+        return InvokeAsync(async () =>
+        {
+            if (_selectedEvent is not null)
+                await CloseEventDetails();
+
+            StateHasChanged();
+        });
+    }
+
     private async Task CloseSettings()
     {
         _showSettings = false;
@@ -702,6 +732,7 @@
     public void Dispose()
     {
         AuthService.OnAuthStateChanged -= HandleAuthStateChanged;
+        DashboardSettingsState.ScreensaverShown -= HandleScreensaverShown;
         _refreshTimer?.Dispose();
     }
 
@@ -978,6 +1009,27 @@
     .calendar-info input[type="checkbox"] {
         width: 20px;
         height: 20px;
+        cursor: pointer;
+    }
+
+    .calendar-next-event-setting {
+        margin-top: 0.4rem;
+        padding-left: 0.25rem;
+    }
+
+    .calendar-next-event-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.85rem;
+        color: var(--bs-secondary-color);
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .calendar-next-event-label input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
         cursor: pointer;
     }
 
