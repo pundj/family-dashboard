@@ -93,14 +93,15 @@ Follow the [QUICK_START.md](QUICK_START.md) guide to:
 ### 4. Run & Sign In
 
 ```bash
-# Run the app
-dotnet run --project FamilyDashboard.Blazor
+# Run the hosted API + Blazor frontend
+dotnet run --project FamilyDashboard.Api/FamilyDashboard.Api.csproj
 
 # In browser:
-# 1. Go to Calendar tile
-# 2. Click "Sign in with Google"
-# 3. Authorize access
-# 4. View your private calendars!
+# 1. Open the dashboard
+# 2. Go to the Calendar tab
+# 3. Click "Sign in with Google"
+# 4. Authorize access
+# 5. View your private calendars!
 ```
 
 ## ?? Configuration Example
