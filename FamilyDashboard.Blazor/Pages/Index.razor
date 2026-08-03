@@ -34,8 +34,8 @@
             }
             @if (_showCamerasTab)
             {
-                <button class="nav-link @(_activeTab == "cameras" ? "active" : "")"
-                        @onclick='() => ChangeTab("cameras")'>Cameras</button>
+                <button class="nav-link"
+                        @onclick="OpenCamerasPopupAsync">Cameras</button>
             }
         </div>
         <button class="btn btn-sm btn-outline-secondary mt-2 w-100"
