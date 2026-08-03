@@ -128,7 +128,21 @@ function Update-BlazorAppSettings {
 
   if ($script:InputParameters.ContainsKey("FamilyName")) { $settings["FamilyName"] = $FamilyName }
   if ($script:InputParameters.ContainsKey("Locale")) { $settings["Locale"] = $Locale }
-  if ($script:InputParameters.ContainsKey("CameraViewerUrl")) { $settings["CameraViewerUrl"] = $CameraViewerUrl }
+if ($script:InputParameters.ContainsKey("CameraViewerUrl")) {
+  if ([string]::IsNullOrWhiteSpace($CameraViewerUrl)) {
+    $settings["CameraViewerUrl"] = $null
+  }
+  else {
+    $trimmedCameraViewerUrl = $CameraViewerUrl.Trim()
+    $cameraViewerUri = $null
+    if (-not [Uri]::TryCreate($trimmedCameraViewerUrl, [UriKind]::Absolute, [ref]$cameraViewerUri) -or
+        $cameraViewerUri.Scheme -notin @([Uri]::UriSchemeHttp, [Uri]::UriSchemeHttps)) {
+      throw "CameraViewerUrl must be an absolute http/https URL (e.g. https://my.wyze.com/home)."
+    }
+
+    $settings["CameraViewerUrl"] = $cameraViewerUri.ToString()
+  }
+}
   if ($script:InputParameters.ContainsKey("GoogleClientId")) { $settings["GoogleOAuth"]["ClientId"] = $GoogleClientId }
   if ($script:InputParameters.ContainsKey("GoogleClientSecret")) { $settings["GoogleOAuth"]["ClientSecret"] = $GoogleClientSecret }
   if ($script:InputParameters.ContainsKey("GoogleRedirectUri")) { $settings["GoogleOAuth"]["RedirectUri"] = $GoogleRedirectUri }
