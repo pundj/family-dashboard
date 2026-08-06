@@ -19,7 +19,7 @@
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
 
-  <Target Name="BuildFrontendAssets" BeforeTargets="AssignTargetPaths">
+  <Target Name="BuildFrontendAssets" BeforeTargets="ResolveProjectStaticWebAssets">
     <Exec Command="npm run build"
           WorkingDirectory="$(MSBuildProjectDirectory)"
           Condition=" '$(Configuration)' == 'Debug'" />
