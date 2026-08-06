@@ -44,7 +44,7 @@ public class GoogleCalendarService : ICalendarService
         }
 
         var now = DateTime.UtcNow;
-        var end = now.AddDays(7);
+        var endOfToday = DateTime.Today.AddDays(1).ToUniversalTime();
 
         CalendarEvent? nextEvent = null;
 
@@ -52,7 +52,7 @@ public class GoogleCalendarService : ICalendarService
         {
             try
             {
-                var candidate = await FetchNextTimedEventForCalendarAsync(calendarId, now, end, accessToken);
+                var candidate = await FetchNextTimedEventForCalendarAsync(calendarId, now, endOfToday, accessToken);
                 if (candidate != null && (nextEvent == null || candidate.StartTime < nextEvent.StartTime))
                 {
                     nextEvent = candidate;
