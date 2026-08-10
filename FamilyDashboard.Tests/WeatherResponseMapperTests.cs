@@ -81,7 +81,7 @@ public class WeatherResponseMapperTests
             PrecipitationProbabilityMax = [15, 80]
         };
 
-        var mapped = WeatherResponseMapper.MapDaily(daily);
+        var mapped = WeatherResponseMapper.MapDaily(daily, TimeSpan.Zero);
 
         Assert.Collection(mapped,
             first =>
