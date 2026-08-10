@@ -4,7 +4,7 @@
 @inject DashboardSettingsState DashboardSettingsState
 @inject ICalendarService CalendarService
 @inject IGoogleAuthService GoogleAuthService
-@using Microsoft.JSInterop
+@inject IWeatherService WeatherService
 @implements IAsyncDisposable
 
 <PageTitle>@_familyName Family Dashboard</PageTitle>
@@ -382,6 +382,32 @@
         };
     }
 
+    [JSInvokable]
+    public async Task<ScreensaverWeatherDto?> GetWeatherForScreensaverAsync()
+    {
+        try
+        {
+            var weather = await WeatherService.GetWeatherAsync();
+            var current = weather.CurrentConditions;
+            if (current is null)
+            {
+                return null;
+            }
+
+            return new ScreensaverWeatherDto
+            {
+                Icon = string.IsNullOrWhiteSpace(current.Icon) ? WeatherCodeMapper.GetIcon(current.WeatherCode) : current.Icon,
+                Temperature = FormatTemperature(current.Temperature),
+                FeelsLike = ShouldShowFeelsLike(current) ? $"({FormatTemperature(current.FeelsLikeTemperature)})" : null,
+                AlertIndicator = weather.Alerts.Count > 0 ? "⚠" : null
+            };
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     private static string FormatTimeUntil(TimeSpan timeUntil)
     {
         var totalMinutes = (int)Math.Ceiling(timeUntil.TotalMinutes);
@@ -402,12 +428,28 @@
         return $"in {minutes}m";
     }
 
+    private static bool ShouldShowFeelsLike(CurrentWeatherConditions current) =>
+        current.FeelsLikeTemperature is not null &&
+        current.Temperature is not null &&
+        Math.Abs(current.FeelsLikeTemperature.Value - current.Temperature.Value) >= 1;
+
+    private static string FormatTemperature(double? temperature) =>
+        temperature is null ? "—" : $"{Math.Round(temperature.Value):0}°F";
+
     public record ScreensaverNextEventDto
     {
         public string Title { get; init; } = string.Empty;
         public string EventTime { get; init; } = string.Empty;
         public string TimeUntilLabel { get; init; } = string.Empty;
         public DateTime? StartTimeUtc { get; init; }
+    }
+
+    public record ScreensaverWeatherDto
+    {
+        public string Icon { get; init; } = string.Empty;
+        public string Temperature { get; init; } = string.Empty;
+        public string? FeelsLike { get; init; }
+        public string? AlertIndicator { get; init; }
     }
 
     public async ValueTask DisposeAsync()

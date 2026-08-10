@@ -99,7 +99,11 @@ This guide helps you set up OAuth 2.0 authentication to access your **private** 
 ```json
 {
   "FamilyName": "Smith",
-  "Locale": "New York",
+  "Weather": {
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "LocationName": "New York"
+  },
   "GoogleOAuth": {
     "ClientId": "790478070066-abc123xyz.apps.googleusercontent.com",
     "ClientSecret": "GOCSPX-ABC123XYZ",

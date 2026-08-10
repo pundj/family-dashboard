@@ -86,7 +86,11 @@ The system determines display names in this order:
 ```json
 {
   "FamilyName": "Smith",
-  "Locale": "New York",
+  "Weather": {
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "LocationName": "New York"
+  },
   "GoogleOAuth": {
     "ClientId": "123456789-abc.apps.googleusercontent.com",
     "ClientSecret": "GOCSPX-...",

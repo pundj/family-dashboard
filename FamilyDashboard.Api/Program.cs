@@ -3,13 +3,22 @@ using FamilyDashboard.Api.Data;
 using FamilyDashboard.Api.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Headers;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
 builder.Services.AddControllers();
-builder.Services.AddHttpClient();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient("OpenMeteo", client => client.BaseAddress = new Uri("https://api.open-meteo.com/v1/"));
+builder.Services.AddHttpClient("Nws", client =>
+{
+    client.BaseAddress = new Uri("https://api.weather.gov/");
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/geo+json"));
+    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("FamilyDashboard/1.0 (+https://github.com/pundj/family-dashboard)");
+});
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? "Data Source=App_Data/familydashboard.db";
@@ -49,6 +58,7 @@ builder.Services.AddAuthorization();
 builder.Services.Configure<SmartThingsOptions>(builder.Configuration.GetSection("SmartThings"));
 builder.Services.AddScoped<ISmartThingsCredentialStore, SmartThingsCredentialStore>();
 builder.Services.AddScoped<ISmartThingsProxyService, SmartThingsProxyService>();
+builder.Services.AddScoped<IWeatherProxyService, WeatherProxyService>();
 
 var app = builder.Build();
 

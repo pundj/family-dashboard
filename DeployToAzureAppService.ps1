@@ -23,7 +23,9 @@ param(
 
   # Blazor wwwroot/appsettings.json values (optional)
   [string]$FamilyName,
-  [string]$Locale,
+  [double]$WeatherLatitude,
+  [double]$WeatherLongitude,
+  [string]$WeatherLocationName,
   [string]$CameraViewerUrl,
   [string]$GoogleClientId,
   [string]$GoogleClientSecret,
@@ -126,9 +128,15 @@ function Update-BlazorAppSettings {
     $settings["GoogleOAuth"] = @{}
   }
 
+  if (-not $settings.ContainsKey("Weather") -or $null -eq $settings["Weather"]) {
+    $settings["Weather"] = @{}
+  }
+
   if ($script:InputParameters.ContainsKey("FamilyName")) { $settings["FamilyName"] = $FamilyName }
-  if ($script:InputParameters.ContainsKey("Locale")) { $settings["Locale"] = $Locale }
-if ($script:InputParameters.ContainsKey("CameraViewerUrl")) {
+  if ($script:InputParameters.ContainsKey("WeatherLatitude")) { $settings["Weather"]["Latitude"] = $WeatherLatitude }
+  if ($script:InputParameters.ContainsKey("WeatherLongitude")) { $settings["Weather"]["Longitude"] = $WeatherLongitude }
+  if ($script:InputParameters.ContainsKey("WeatherLocationName")) { $settings["Weather"]["LocationName"] = $WeatherLocationName }
+ if ($script:InputParameters.ContainsKey("CameraViewerUrl")) {
   if ([string]::IsNullOrWhiteSpace($CameraViewerUrl)) {
     $settings["CameraViewerUrl"] = $null
   }

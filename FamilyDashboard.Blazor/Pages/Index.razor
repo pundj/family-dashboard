@@ -6,44 +6,64 @@
 @implements IDisposable
 
 <div class="d-flex align-items-start mt-2">
-    <div class="dashboard-tab-sidebar">
-        <button class="btn btn-outline-secondary dashboard-tab-toggle"
+    <div class="dashboard-tab-sidebar @(_showTabs ? "" : "is-collapsed")">
+        <button class="nav-link dashboard-tab-toggle"
                 @onclick="ToggleTabs"
                 aria-controls="dashboard-tabs"
                 aria-expanded="@_showTabs"
-                aria-label="@(_showTabs ? "Hide dashboard tabs" : "Show dashboard tabs")">
-            <span aria-hidden="true">@(_showTabs ? "◀" : "▶")</span>
+                aria-label="@(_showTabs ? "Collapse dashboard tabs" : "Expand dashboard tabs")"
+                title="@(_showTabs ? "Collapse dashboard tabs" : "Expand dashboard tabs")">
+            <i class="fa-solid fa-bars" aria-hidden="true"></i>
         </button>
-        @if (_showTabs)
-        {
         <div id="dashboard-tabs" class="nav flex-column nav-pills mt-2" role="tablist" aria-orientation="vertical">
             @if (_showSmartThingsTab)
             {
-                <button class="nav-link @(_activeTab == "smart-home" ? "active" : "")" 
-                        @onclick='() => ChangeTab("smart-home")'>Smart Home</button>
+                <button class="nav-link dashboard-tab-link @(_activeTab == "smart-home" ? "active" : "")"
+                        @onclick='() => ChangeTab("smart-home")'
+                        aria-label="Smart Home"
+                        title="Smart Home">
+                    <i class="fa-solid fa-house" aria-hidden="true"></i>
+                    <span class="dashboard-tab-label">Smart Home</span>
+                </button>
             }
             @if (_showWeatherTab)
             {
-                <button class="nav-link @(_activeTab == "weather" ? "active" : "")" 
-                        @onclick='() => ChangeTab("weather")'>Weather</button>
+                <button class="nav-link dashboard-tab-link @(_activeTab == "weather" ? "active" : "")"
+                        @onclick='() => ChangeTab("weather")'
+                        aria-label="Weather"
+                        title="Weather">
+                    <i class="fa-solid fa-cloud-sun" aria-hidden="true"></i>
+                    <span class="dashboard-tab-label">Weather</span>
+                </button>
             }
             @if (_showCalendarTab)
             {
-                <button class="nav-link @(_activeTab == "calendar" ? "active" : "")" 
-                        @onclick='() => ChangeTab("calendar")'>Calendar</button>
+                <button class="nav-link dashboard-tab-link @(_activeTab == "calendar" ? "active" : "")"
+                        @onclick='() => ChangeTab("calendar")'
+                        aria-label="Calendar"
+                        title="Calendar">
+                    <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                    <span class="dashboard-tab-label">Calendar</span>
+                </button>
             }
             @if (_showCamerasTab)
             {
-                <button class="nav-link"
-                        @onclick="OpenCamerasPopupAsync">Cameras</button>
+                <button class="nav-link dashboard-tab-link"
+                        @onclick="OpenCamerasPopupAsync"
+                        aria-label="Cameras"
+                        title="Cameras">
+                    <i class="fa-solid fa-camera" aria-hidden="true"></i>
+                    <span class="dashboard-tab-label">Cameras</span>
+                </button>
             }
         </div>
-        <button class="btn btn-sm btn-outline-secondary mt-2 w-100"
-                @onclick="DashboardSettingsState.RequestOpen">
-            <i class="fa-solid fa-gear me-1" aria-hidden="true"></i>
-            Settings
+        <button class="nav-link dashboard-settings-button mt-2"
+                @onclick="DashboardSettingsState.RequestOpen"
+                aria-label="Settings"
+                title="Settings">
+            <i class="fa-solid fa-gear" aria-hidden="true"></i>
+            <span class="dashboard-tab-label">Settings</span>
         </button>
-        }
     </div>
     <div class="dashboard-tab-content tab-content flex-grow-1">
         @if (_showSmartThingsTab)
@@ -89,7 +109,7 @@
     protected override async Task OnInitializedAsync()
     {
         _showSmartThingsTab = true;
-        _showWeatherTab = Configuration != null && Configuration.GetValue<string>("Locale") != null;
+        _showWeatherTab = HasWeatherConfiguration();
         _showCalendarTab = Configuration != null && 
             (Configuration.GetValue<string>("GoogleOAuth:ClientId") != null || 
              Configuration.GetValue<string>("GoogleCalendarEmbedCode") != null);
@@ -232,6 +252,19 @@
         }
 
         return string.Empty;
+    }
+
+    private bool HasWeatherConfiguration()
+    {
+        var weatherSection = Configuration?.GetSection("Weather");
+        if (weatherSection is null)
+        {
+            return false;
+        }
+
+        var latitude = weatherSection.GetValue<double?>("Latitude");
+        var longitude = weatherSection.GetValue<double?>("Longitude");
+        return latitude is not null && longitude is not null;
     }
 
     public void Dispose()
