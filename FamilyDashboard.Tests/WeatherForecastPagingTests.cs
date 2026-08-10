@@ -5,7 +5,7 @@ namespace FamilyDashboard.Tests;
 public class WeatherForecastPagingTests
 {
     [Fact]
-    public void GetPage_ReturnsFirstSixEntriesByDefault()
+    public void GetPage_ReturnsFirstFiveEntriesByDefault()
     {
         var hourly = Enumerable.Range(1, 10)
             .Select(index => new HourlyWeatherForecastEntry { Time = new DateTimeOffset(2026, 1, index, 0, 0, 0, TimeSpan.Zero) })
@@ -13,9 +13,9 @@ public class WeatherForecastPagingTests
 
         var page = WeatherForecastPaging.GetPage(hourly, 0);
 
-        Assert.Equal(6, page.Count);
+        Assert.Equal(5, page.Count);
         Assert.Equal(1, page[0].Time.Day);
-        Assert.Equal(6, page[^1].Time.Day);
+        Assert.Equal(5, page[^1].Time.Day);
     }
 
     [Fact]
