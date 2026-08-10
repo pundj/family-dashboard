@@ -10,6 +10,7 @@ const defaultInactivityTimeoutMinutes = 5;
 const defaultScreensaverDateFormat = 'ddd MMM d yyyy';
 const defaultScreensaverTimeFormat = 'h:mm:ss tt';
 const screensaverNextEventRefreshMilliseconds = 30 * 60 * 1000;
+const screensaverWeatherRefreshMilliseconds = 5 * 60 * 1000;
 const dateTimeFormatTokenPattern = /yyyy|MMMM|dddd|MMM|ddd|yy|MM|dd|HH|hh|mm|ss|tt|M|d|H|h|m|s|t/g;
 let inactivityTimeoutId;
 let inactivityTimeoutMilliseconds = defaultInactivityTimeoutMinutes * 60 * 1000;
@@ -26,6 +27,12 @@ let screensaverDateFormat = defaultScreensaverDateFormat;
 let screensaverTimeFormat = defaultScreensaverTimeFormat;
 let screensaverActivationCallback;
 let screensaverDotNetRef = null;
+let screensaverWeatherContainer;
+let screensaverWeatherIcon;
+let screensaverWeatherTemperature;
+let screensaverWeatherFeelsLike;
+let screensaverWeatherAlert;
+let screensaverWeatherRefreshIntervalId;
 let screensaverNextEventContainer;
 let screensaverCalendarIconTime;
 let screensaverEventTitle;
@@ -65,6 +72,29 @@ function ensureInactivityOverlay() {
     screensaverClock.append(screensaverTime, screensaverMeridiem);
     screensaverDateTimeContainer.append(screensaverDate, screensaverClock);
 
+    screensaverWeatherContainer = document.createElement('div');
+    screensaverWeatherContainer.className = 'screensaver-weather';
+    screensaverWeatherContainer.setAttribute('hidden', '');
+
+    const weatherHeader = document.createElement('div');
+    weatherHeader.className = 'screensaver-weather-header';
+
+    screensaverWeatherIcon = document.createElement('span');
+    screensaverWeatherIcon.className = 'screensaver-weather-icon';
+
+    screensaverWeatherTemperature = document.createElement('span');
+    screensaverWeatherTemperature.className = 'screensaver-weather-temperature';
+
+    weatherHeader.append(screensaverWeatherIcon, screensaverWeatherTemperature);
+
+    screensaverWeatherFeelsLike = document.createElement('div');
+    screensaverWeatherFeelsLike.className = 'screensaver-weather-feels-like';
+
+    screensaverWeatherAlert = document.createElement('div');
+    screensaverWeatherAlert.className = 'screensaver-weather-alert';
+
+    screensaverWeatherContainer.append(weatherHeader, screensaverWeatherFeelsLike, screensaverWeatherAlert);
+
     screensaverNextEventContainer = document.createElement('div');
     screensaverNextEventContainer.className = 'screensaver-next-event';
     screensaverNextEventContainer.setAttribute('hidden', '');
@@ -90,6 +120,7 @@ function ensureInactivityOverlay() {
     screensaverNextEventContainer.append(calendarIcon, screensaverEventTitle, screensaverEventCountdown);
 
     inactivityOverlay.appendChild(screensaverDateTimeContainer);
+    inactivityOverlay.appendChild(screensaverWeatherContainer);
     inactivityOverlay.appendChild(screensaverNextEventContainer);
     document.body.appendChild(inactivityOverlay);
 }
@@ -171,6 +202,7 @@ async function showDarkScreen() {
         screensaverDateTimeIntervalId = window.setInterval(updateScreensaverDateTime, 1000);
     }
 
+    startScreensaverWeatherRefresh();
     startScreensaverNextEventRefresh();
 
     inactivityOverlay.focus();
@@ -195,10 +227,41 @@ function wakeScreen() {
     inactivityOverlay?.classList.remove('is-visible');
     window.clearInterval(screensaverDateTimeIntervalId);
     screensaverDateTimeIntervalId = undefined;
+    clearScreensaverWeatherRefresh();
     clearScreensaverNextEventCountdown();
     clearScreensaverNextEventRefresh();
+    screensaverWeatherContainer?.setAttribute('hidden', '');
     screensaverNextEventContainer?.setAttribute('hidden', '');
     resetInactivityTimer();
+}
+
+function startScreensaverWeatherRefresh() {
+    clearScreensaverWeatherRefresh();
+    requestScreensaverWeather();
+    if (screensaverDotNetRef) {
+        screensaverWeatherRefreshIntervalId = window.setInterval(
+            requestScreensaverWeather,
+            screensaverWeatherRefreshMilliseconds);
+    }
+}
+
+function clearScreensaverWeatherRefresh() {
+    window.clearInterval(screensaverWeatherRefreshIntervalId);
+    screensaverWeatherRefreshIntervalId = undefined;
+}
+
+function requestScreensaverWeather() {
+    if (!screensaverDotNetRef) {
+        return;
+    }
+
+    screensaverDotNetRef.invokeMethodAsync('GetWeatherForScreensaverAsync')
+        .then(weatherData => {
+            window.familyDashboard.setWeatherSummary(weatherData);
+        })
+        .catch(() => {
+            screensaverWeatherContainer?.setAttribute('hidden', '');
+        });
 }
 
 function startScreensaverNextEventRefresh() {
@@ -315,6 +378,7 @@ window.familyDashboard = {
         } else {
             window.clearTimeout(inactivityTimeoutId);
             inactivityOverlay?.classList.remove('is-visible');
+            clearScreensaverWeatherRefresh();
             clearScreensaverNextEventCountdown();
             clearScreensaverNextEventRefresh();
         }
@@ -355,6 +419,26 @@ window.familyDashboard = {
     setScreensaverDotNetRef: ref => {
         screensaverDotNetRef = ref;
     },
+    setWeatherSummary: weatherData => {
+        if (!screensaverWeatherContainer) return;
+        if (!weatherData) {
+            screensaverWeatherContainer.setAttribute('hidden', '');
+            return;
+        }
+
+        if (screensaverWeatherIcon) screensaverWeatherIcon.textContent = weatherData.icon ?? '';
+        if (screensaverWeatherTemperature) screensaverWeatherTemperature.textContent = weatherData.temperature ?? '';
+        if (screensaverWeatherFeelsLike) {
+            screensaverWeatherFeelsLike.textContent = weatherData.feelsLike ?? '';
+            screensaverWeatherFeelsLike.hidden = !weatherData.feelsLike;
+        }
+        if (screensaverWeatherAlert) {
+            screensaverWeatherAlert.textContent = weatherData.alertIndicator ?? '';
+            screensaverWeatherAlert.hidden = !weatherData.alertIndicator;
+        }
+
+        screensaverWeatherContainer.removeAttribute('hidden');
+    },
     setNextEvent: eventData => {
         if (!screensaverNextEventContainer) return;
         clearScreensaverNextEventCountdown();
@@ -378,6 +462,7 @@ window.familyDashboard = {
         screensaverActivationCallback = undefined;
         window.clearTimeout(inactivityTimeoutId);
         window.clearInterval(screensaverDateTimeIntervalId);
+        clearScreensaverWeatherRefresh();
         clearScreensaverNextEventCountdown();
         clearScreensaverNextEventRefresh();
         for (const eventName of inactivityActivityEvents) {

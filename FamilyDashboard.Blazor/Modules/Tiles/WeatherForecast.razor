@@ -1,50 +1,485 @@
-@inject IWeatherForecastService WeatherForecastService
-@using FamilyDashboard.Blazor.Models
+@inject IWeatherService WeatherService
+@implements IAsyncDisposable
 
-<h3 @onclick="async () => await FetchWeatherReportAsync()">Weather</h3>
-@if (_errorMessage != null)
-{
-    <p class="m-0">@_errorMessage</p>
-}
-else if (_weatherForecastImage == null)
-{
-    <p>Loading weather forecast...</p>
-}
-else
-{
-    <img src="@_weatherForecastImage" alt="Weather Forecast for Locale" @onclick="@(async (e) => await FetchWeatherReportAsync())" />
-}
+<section class="weather-dashboard">
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-2">
+        <div>
+            <h3 class="mb-0">Weather</h3>
+            @if (!string.IsNullOrWhiteSpace(_weatherData?.LocationName))
+            {
+                <div class="text-body-secondary small">@_weatherData.LocationName</div>
+            }
+        </div>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="async () => await LoadWeatherAsync()" disabled="@_isLoading">
+            Refresh
+        </button>
+    </div>
+
+    @if (_isLoading)
+    {
+        <div class="weather-loading text-body-secondary">Loading weather forecast...</div>
+    }
+    else if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-warning mb-0" role="alert">@_errorMessage</div>
+    }
+    else if (_weatherData is null || _weatherData.CurrentConditions is null)
+    {
+        <div class="alert alert-warning mb-0" role="alert">Weather data is temporarily unavailable.</div>
+    }
+    else
+    {
+        var current = _weatherData.CurrentConditions;
+        var hourlyPage = WeatherForecastPaging.GetPage(_weatherData.HourlyForecast, _hourlyStartIndex);
+        var dailyPage = GetDailyPage();
+
+        <div class="weather-current card mb-2">
+            <div class="card-body py-2">
+                <div class="weather-current-layout">
+                    <div class="weather-current-summary text-center">
+                        <div class="weather-icon">@current.Icon</div>
+                        <div class="weather-current-temperature">@FormatTemperature(current.Temperature)</div>
+                        @if (ShouldShowFeelsLike(current))
+                        {
+                            <div class="text-body-secondary small">Feels like @FormatTemperature(current.FeelsLikeTemperature)</div>
+                        }
+                        <div class="text-body-secondary small">@current.Condition</div>
+                    </div>
+                    <div class="weather-current-stats">
+                        <div class="weather-stat-item">
+                            <div class="weather-stat-label text-body-secondary">Humidity</div>
+                            <div class="weather-stat-value">@FormatPercent(current.RelativeHumidity)</div>
+                        </div>
+                        <div class="weather-stat-item">
+                            <div class="weather-stat-label text-body-secondary">Wind</div>
+                            <div class="weather-stat-value">@FormatWind(current.WindDirection, current.WindSpeed)</div>
+                        </div>
+                        <div class="weather-stat-item">
+                            <div class="weather-stat-label text-body-secondary">Precipitation</div>
+                            <div class="weather-stat-value">@FormatPrecipitation(current.Precipitation, current.PrecipitationProbability)</div>
+                        </div>
+                        <div class="weather-stat-item">
+                            <div class="weather-stat-label text-body-secondary">Sunrise</div>
+                            <div class="weather-stat-value">@FormatTime(GetTodaySunrise(_weatherData.DailyForecast))</div>
+                        </div>
+                        <div class="weather-stat-item">
+                            <div class="weather-stat-label text-body-secondary">Sunset</div>
+                            <div class="weather-stat-value">@FormatTime(GetTodaySunset(_weatherData.DailyForecast))</div>
+                        </div>
+                    </div>
+                    <div class="weather-current-alerts">
+                        <h4 class="mb-1">Weather Alerts</h4>
+                        @if (!_weatherData.AlertsAvailable)
+                        {
+                            <div class="text-body-secondary small">Alerts temporarily unavailable</div>
+                        }
+                        else if (_weatherData.Alerts.Count == 0)
+                        {
+                            <div class="text-body-secondary small">✓ No active weather alerts</div>
+                        }
+                        else
+                        {
+                            <div class="weather-alert-list weather-alert-list-compact d-grid gap-1">
+                                @foreach (var alert in _weatherData.Alerts)
+                                {
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-warning text-start weather-alert-summary"
+                                            @onclick="() => OpenAlertDetails(alert)">
+                                        <span class="weather-alert-icon">⚠</span>
+                                        <span class="weather-alert-text">@(!string.IsNullOrWhiteSpace(alert.EventTitle) ? alert.EventTitle : "Weather Alert")</span>
+                                        <span class="weather-alert-time">@FormatAlertTimeRange(alert.EffectiveTime, alert.ExpirationTime)</span>
+                                    </button>
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="weather-section mb-2" aria-labelledby="hourly-forecast-heading">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                <h4 id="hourly-forecast-heading" class="mb-0">Hourly Forecast</h4>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Hourly forecast paging">
+                    <button class="btn btn-outline-secondary" @onclick="ShowPreviousHourlyPage" disabled="@(!WeatherForecastPaging.CanGoPrevious(_hourlyStartIndex))">‹ Previous</button>
+                    <button class="btn btn-outline-secondary" @onclick="ShowNextHourlyPage" disabled="@(!WeatherForecastPaging.CanGoNext(_hourlyStartIndex, _weatherData.HourlyForecast.Count))">Next ›</button>
+                </div>
+            </div>
+            <div class="weather-hourly-grid">
+                @foreach (var entry in hourlyPage)
+                {
+                    <article class="weather-hourly-item card">
+                        <div class="card-body text-center py-2">
+                            <div class="small text-body-secondary">@GetHourlyTimeLabel(entry.Time)</div>
+                            <div class="weather-icon weather-icon-sm">@entry.Icon</div>
+                            <div class="fw-semibold">@FormatTemperature(entry.Temperature)</div>
+                            <div class="small text-body-secondary">@entry.Condition</div>
+                            <div class="small">@FormatProbability(entry.PrecipitationProbability)</div>
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+
+        @if (_selectedAlert is not null)
+        {
+            <div class="weather-alert-details-modal" @onclick="CloseAlertDetails">
+                <div class="weather-alert-details-content" @onclick:stopPropagation="true" role="dialog" aria-modal="true" aria-labelledby="weather-alert-details-title">
+                    <div class="weather-alert-details-header">
+                        <h4 id="weather-alert-details-title" class="mb-0">@(!string.IsNullOrWhiteSpace(_selectedAlert.EventTitle) ? _selectedAlert.EventTitle : "Weather Alert")</h4>
+                        <button class="btn-close" @onclick="CloseAlertDetails" aria-label="Close alert details"></button>
+                    </div>
+                    <div class="weather-alert-details-body">
+                        @if (!string.IsNullOrWhiteSpace(_selectedAlert.Headline))
+                        {
+                            <div class="weather-alert-detail-row">
+                                <div class="weather-alert-detail-label">Headline</div>
+                                <div class="weather-alert-detail-value">@_selectedAlert.Headline</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedAlert.Severity))
+                        {
+                            <div class="weather-alert-detail-row">
+                                <div class="weather-alert-detail-label">Severity</div>
+                                <div class="weather-alert-detail-value">@_selectedAlert.Severity</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedAlert.Urgency))
+                        {
+                            <div class="weather-alert-detail-row">
+                                <div class="weather-alert-detail-label">Urgency</div>
+                                <div class="weather-alert-detail-value">@_selectedAlert.Urgency</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedAlert.Certainty))
+                        {
+                            <div class="weather-alert-detail-row">
+                                <div class="weather-alert-detail-label">Certainty</div>
+                                <div class="weather-alert-detail-value">@_selectedAlert.Certainty</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedAlert.Area))
+                        {
+                            <div class="weather-alert-detail-row">
+                                <div class="weather-alert-detail-label">Area</div>
+                                <div class="weather-alert-detail-value">@_selectedAlert.Area</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedAlert.Description))
+                        {
+                            <div class="weather-alert-detail-row">
+                                <div class="weather-alert-detail-label">Details</div>
+                                <div class="weather-alert-detail-value">@_selectedAlert.Description</div>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(_selectedAlert.Instructions))
+                        {
+                            <div class="weather-alert-detail-row">
+                                <div class="weather-alert-detail-label">Instructions</div>
+                                <div class="weather-alert-detail-value">@_selectedAlert.Instructions</div>
+                            </div>
+                        }
+                    </div>
+                    <div class="weather-alert-details-footer">
+                        <button class="btn btn-outline-secondary" @onclick="CloseAlertDetails">Close</button>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <section class="weather-section mb-2" aria-labelledby="daily-forecast-heading">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+                <h4 id="daily-forecast-heading" class="mb-0">Day-to-Day Forecast</h4>
+                <div class="btn-group btn-group-sm" role="group" aria-label="Day-to-day forecast paging">
+                    <button class="btn btn-outline-secondary" @onclick="ShowPreviousDailyPage" disabled="@(!CanGoPreviousDailyPage())">‹ Previous</button>
+                    <button class="btn btn-outline-secondary" @onclick="ShowNextDailyPage" disabled="@(!CanGoNextDailyPage())">Next ›</button>
+                </div>
+            </div>
+            <div class="weather-daily-grid weather-daily-grid-compact">
+                @foreach (var day in dailyPage)
+                {
+                    <article class="weather-daily-item card">
+                        <div class="card-body text-center py-2">
+                            <div class="fw-semibold">@day.Date.ToString("ddd M/d")</div>
+                            <div class="weather-icon weather-icon-sm">@day.Icon</div>
+                            <div class="small text-body-secondary">@day.Condition</div>
+                            <div class="fw-semibold">@FormatHighLow(day.HighTemperature, day.LowTemperature)</div>
+                            <div class="small">@FormatProbability(day.PrecipitationProbability)</div>
+                        </div>
+                    </article>
+                }
+            </div>
+        </section>
+    }
+</section>
 
 @code {
+    private static readonly TimeSpan WeatherRefreshInterval = TimeSpan.FromMinutes(5);
+    private readonly SemaphoreSlim _loadLock = new(1, 1);
+    private CancellationTokenSource? _refreshCancellationSource;
+    private Task? _refreshTask;
+    private bool _isLoading = true;
     private string? _errorMessage;
-    private string? _weatherForecastImage;
-    private Timer? _timer;
+    private const int DailyPageSize = 5;
+    private WeatherData? _weatherData;
+    private int _hourlyStartIndex;
+    private int _dailyStartIndex;
+    private WeatherAlert? _selectedAlert;
 
     protected override async Task OnInitializedAsync()
     {
-        _timer = new System.Threading.Timer(async _ =>
-        {
-            await FetchWeatherReportAsync();
-            await InvokeAsync(StateHasChanged);
-        }, null, TimeSpan.Zero, TimeSpan.FromHours(1));
-
-        await base.OnInitializedAsync();
+        await LoadWeatherAsync();
+        StartAutoRefresh();
     }
 
-    async Task FetchWeatherReportAsync()
+    private void StartAutoRefresh()
     {
-        _weatherForecastImage = null;
+        _refreshCancellationSource?.Cancel();
+        _refreshCancellationSource?.Dispose();
+        _refreshCancellationSource = new CancellationTokenSource();
+        _refreshTask = RefreshWeatherLoopAsync(_refreshCancellationSource.Token);
+    }
+
+    private async Task RefreshWeatherLoopAsync(CancellationToken cancellationToken)
+    {
+        using var timer = new PeriodicTimer(WeatherRefreshInterval);
+        while (await timer.WaitForNextTickAsync(cancellationToken))
+        {
+            await LoadWeatherAsync(cancellationToken);
+        }
+    }
+
+    private async Task LoadWeatherAsync(CancellationToken cancellationToken = default)
+    {
+        await _loadLock.WaitAsync(cancellationToken);
         try
         {
-            var base64String = await WeatherForecastService.GetWeatherForecastBase64ImageStringAsync();
-            if (base64String == null)
-                throw new Exception();
-            _weatherForecastImage = $"data:image/png;base64,{base64String}";
-            StateHasChanged();
+            _isLoading = true;
+            _errorMessage = null;
+
+            try
+            {
+                _weatherData = await WeatherService.GetWeatherAsync(cancellationToken);
+                _hourlyStartIndex = WeatherForecastPaging.ClampStartIndex(_hourlyStartIndex, _weatherData.HourlyForecast.Count);
+                _dailyStartIndex = ClampDailyStartIndex(_dailyStartIndex, _weatherData.DailyForecast.Count);
+            }
+            catch
+            {
+                _errorMessage = "Unable to retrieve the weather forecast right now.";
+                _weatherData = null;
+            }
+            finally
+            {
+                _isLoading = false;
+                await InvokeAsync(StateHasChanged);
+            }
         }
-        catch
+        finally
         {
-            _errorMessage = "Unable to retrieve a weather forecast.";
+            _loadLock.Release();
         }
+    }
+
+    private void ShowPreviousHourlyPage()
+    {
+        if (_weatherData is null)
+        {
+            return;
+        }
+
+        _hourlyStartIndex = WeatherForecastPaging.GetPreviousStartIndex(_hourlyStartIndex, _weatherData.HourlyForecast.Count);
+    }
+
+    private void ShowNextHourlyPage()
+    {
+        if (_weatherData is null)
+        {
+            return;
+        }
+
+        _hourlyStartIndex = WeatherForecastPaging.GetNextStartIndex(_hourlyStartIndex, _weatherData.HourlyForecast.Count);
+    }
+
+    private IReadOnlyList<DailyWeatherForecastEntry> GetDailyPage()
+    {
+        if (_weatherData is null)
+        {
+            return [];
+        }
+
+        var startIndex = ClampDailyStartIndex(_dailyStartIndex, _weatherData.DailyForecast.Count);
+        var count = Math.Min(DailyPageSize, _weatherData.DailyForecast.Count - startIndex);
+        return _weatherData.DailyForecast.Skip(startIndex).Take(count).ToArray();
+    }
+
+    private void ShowPreviousDailyPage()
+    {
+        if (_weatherData is null)
+        {
+            return;
+        }
+
+        _dailyStartIndex = ClampDailyStartIndex(_dailyStartIndex - DailyPageSize, _weatherData.DailyForecast.Count);
+    }
+
+    private void ShowNextDailyPage()
+    {
+        if (_weatherData is null)
+        {
+            return;
+        }
+
+        _dailyStartIndex = ClampDailyStartIndex(_dailyStartIndex + DailyPageSize, _weatherData.DailyForecast.Count);
+    }
+
+    private bool CanGoPreviousDailyPage() => _dailyStartIndex > 0;
+
+    private bool CanGoNextDailyPage() => _weatherData is not null && _dailyStartIndex + DailyPageSize < _weatherData.DailyForecast.Count;
+
+    private static int ClampDailyStartIndex(int startIndex, int totalCount)
+    {
+        if (totalCount <= 0)
+        {
+            return 0;
+        }
+
+        var maxStartIndex = ((totalCount - 1) / DailyPageSize) * DailyPageSize;
+        return Math.Clamp(startIndex, 0, maxStartIndex);
+    }
+
+    private static bool ShouldShowFeelsLike(CurrentWeatherConditions current) =>
+        current.FeelsLikeTemperature is not null &&
+        current.Temperature is not null &&
+        Math.Abs(current.FeelsLikeTemperature.Value - current.Temperature.Value) >= 1;
+
+    private static string FormatTemperature(double? temperature) =>
+        temperature is null ? "—" : $"{Math.Round(temperature.Value):0}°F";
+
+    private static string FormatPercent(double? value) =>
+        value is null ? "—" : $"{Math.Round(value.Value):0}%";
+
+    private static string FormatProbability(double? value) =>
+        value is null ? "—" : $"{Math.Round(value.Value):0}%";
+
+    private static string FormatTime(DateTimeOffset? time) =>
+        time is null ? "—" : time.Value.ToString("h:mm tt");
+
+    private static DateTimeOffset? GetTodaySunrise(IReadOnlyList<DailyWeatherForecastEntry> dailyForecast) =>
+        dailyForecast.FirstOrDefault()?.Sunrise;
+
+    private static DateTimeOffset? GetTodaySunset(IReadOnlyList<DailyWeatherForecastEntry> dailyForecast) =>
+        dailyForecast.FirstOrDefault()?.Sunset;
+
+    private static string GetHourlyTimeLabel(DateTimeOffset time)
+    {
+        var label = time.ToString("h tt");
+        if (time.Date > DateTime.Now.Date)
+        {
+            label = $"{time:M/d} {label}";
+        }
+
+        return label;
+    }
+
+    private static string FormatHighLow(double? highTemperature, double? lowTemperature) =>
+        $"{FormatTemperature(highTemperature)}/{FormatTemperature(lowTemperature)}";
+
+    private static string FormatWind(int? windDirection, double? windSpeed)
+    {
+        if (windSpeed is null)
+        {
+            return "—";
+        }
+
+        var direction = GetCompassDirection(windDirection);
+        return string.IsNullOrWhiteSpace(direction)
+            ? $"{Math.Round(windSpeed.Value):0} mph"
+            : $"{direction} {Math.Round(windSpeed.Value):0} mph";
+    }
+
+    private static string FormatPrecipitation(double? amount, double? probability)
+    {
+        if (amount is not null && amount.Value > 0)
+        {
+            return $"{amount.Value:0.##} in";
+        }
+
+        return probability is null ? "—" : $"{Math.Round(probability.Value):0}%";
+    }
+
+    private static string FormatAlertTimeRange(DateTimeOffset? effectiveTime, DateTimeOffset? expirationTime)
+    {
+        if (effectiveTime is null && expirationTime is null)
+        {
+            return string.Empty;
+        }
+
+        if (effectiveTime is null)
+        {
+            return $"until {expirationTime:ddd h:mm tt}";
+        }
+
+        if (expirationTime is null)
+        {
+            return $"from {effectiveTime:ddd h:mm tt}";
+        }
+
+        return $"{effectiveTime:ddd h:mm tt} – {expirationTime:ddd h:mm tt}";
+    }
+
+    private void OpenAlertDetails(WeatherAlert alert)
+    {
+        _selectedAlert = alert;
+        StateHasChanged();
+    }
+
+    private void CloseAlertDetails()
+    {
+        _selectedAlert = null;
+        StateHasChanged();
+    }
+
+    private static string? GetCompassDirection(int? degrees)
+    {
+        if (degrees is null)
+        {
+            return null;
+        }
+
+        var value = ((degrees.Value % 360) + 360) % 360;
+        return value switch
+        {
+            >= 338 or < 23 => "N",
+            < 68 => "NE",
+            < 113 => "E",
+            < 158 => "SE",
+            < 203 => "S",
+            < 248 => "SW",
+            < 293 => "W",
+            _ => "NW"
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_refreshCancellationSource is not null)
+        {
+            await _refreshCancellationSource.CancelAsync();
+            _refreshCancellationSource.Dispose();
+            _refreshCancellationSource = null;
+        }
+
+        if (_refreshTask is not null)
+        {
+            try
+            {
+                await _refreshTask;
+            }
+            catch (OperationCanceledException)
+            {
+            }
+        }
+
+        _loadLock.Dispose();
     }
 }

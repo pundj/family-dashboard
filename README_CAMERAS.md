@@ -28,8 +28,12 @@ Example:
 ```json
 {
   "FamilyName": "Smith",
-  "Locale": "Jefferson City",
   "CameraViewerUrl": "https://my.wyze.com/home",
+  "Weather": {
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "LocationName": "My Location"
+  },
   "GoogleOAuth": {
 	"ClientId": null,
 	"ClientSecret": null,

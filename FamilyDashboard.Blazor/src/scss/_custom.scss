@@ -359,15 +359,116 @@ html[data-bs-theme="dark"] {
 .dashboard-tab-sidebar {
     flex: 0 0 auto;
     margin-right: 0.75rem;
+    width: 11rem;
+}
+
+.dashboard-tab-sidebar.is-collapsed {
+    width: 3.5rem;
 }
 
 .dashboard-tab-toggle {
     align-items: center;
-    display: inline-flex;
-    height: 2rem;
+    display: flex;
+    gap: 0.75rem;
+    height: 2.25rem;
+    justify-content: flex-start;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    width: 100%;
+}
+
+.dashboard-tab-link,
+.dashboard-settings-button,
+.dashboard-tab-toggle {
+    align-items: center;
+    display: flex;
+    justify-content: flex-start;
+    width: 100%;
+}
+
+.dashboard-tab-toggle,
+.dashboard-settings-button {
+    background-color: transparent;
+    border: 0;
+    box-shadow: none;
+}
+
+.dashboard-tab-toggle {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.dashboard-tab-toggle i,
+.dashboard-tab-toggle span,
+.dashboard-settings-button i,
+.dashboard-settings-button span {
+    font-size: 1rem;
+}
+
+.dashboard-settings-button {
+    background-color: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+}
+
+.dashboard-tab-link,
+.dashboard-settings-button,
+.dashboard-tab-toggle {
+    gap: 0.75rem;
+}
+
+.dashboard-settings-button {
+    justify-content: flex-start;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.dashboard-tab-link {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+}
+
+.dashboard-tab-toggle {
+    justify-content: flex-start;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    border-radius: var(--bs-border-radius);
+    background: transparent;
+    border: 0;
+}
+
+.dashboard-tab-link i,
+.dashboard-settings-button i,
+.dashboard-tab-toggle i,
+.dashboard-tab-toggle span,
+.dashboard-settings-button span {
+    flex: 0 0 auto;
+    width: 1.25rem;
+    color: var(--bs-nav-link-color);
+}
+
+.dashboard-tab-sidebar.is-collapsed .dashboard-tab-link,
+.dashboard-tab-sidebar.is-collapsed .dashboard-settings-button,
+.dashboard-tab-sidebar.is-collapsed .dashboard-tab-toggle {
     justify-content: center;
-    padding: 0;
-    width: 2rem;
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.dashboard-tab-sidebar.is-collapsed .dashboard-tab-label {
+    display: none;
+}
+
+.dashboard-settings-button,
+.dashboard-settings-button:hover,
+.dashboard-settings-button:focus,
+.dashboard-settings-button:active {
+    color: var(--bs-nav-link-color) !important;
+}
+
+.dashboard-settings-button i,
+.dashboard-settings-button span {
+    color: inherit !important;
 }
 
 .dashboard-tab-content {
@@ -377,4 +478,209 @@ html[data-bs-theme="dark"] {
 .dashboard-top-tiles {
     margin-left: 0;
     margin-right: 0;
+}
+
+.weather-dashboard {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.weather-current,
+.weather-hourly-item,
+.weather-daily-item,
+.weather-alert {
+    --bs-card-border-width: 0;
+}
+
+.weather-section h4 {
+    font-size: 0.9rem;
+}
+
+.weather-current .weather-icon,
+.screensaver-weather-icon {
+    font-size: clamp(1.6rem, 3.5vw, 2.6rem);
+    line-height: 1;
+}
+
+.weather-current-temperature,
+.screensaver-weather-temperature {
+    font-size: clamp(1.35rem, 2.75vw, 2rem);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.weather-current-layout {
+    display: grid;
+    gap: 0.25rem;
+    grid-template-columns: minmax(5rem, 0.65fr) minmax(6.5rem, 0.9fr) minmax(7.5rem, 1fr);
+    align-items: start;
+}
+
+.weather-current-summary {
+    align-self: start;
+}
+
+.weather-current-stats {
+    display: grid;
+    gap: 0.2rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.weather-stat-item {
+    display: grid;
+    gap: 0.1rem;
+    line-height: 1.05;
+}
+
+.weather-stat-label {
+    font-size: 0.82rem;
+}
+
+.weather-stat-value {
+    font-weight: 600;
+}
+
+.weather-current-alerts {
+    border-left: 1px solid rgba(255, 255, 255, 0.08);
+    padding-left: 0.35rem;
+}
+
+.weather-current-alerts h4 {
+    font-size: 0.9rem;
+    margin-bottom: 0.2rem;
+}
+
+.weather-alert-list-compact {
+    gap: 0.2rem;
+}
+
+.weather-alert-details-modal {
+    align-items: center;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    inset: 0;
+    justify-content: center;
+    padding: 1rem;
+    position: fixed;
+    z-index: 1070;
+}
+
+.weather-alert-details-content {
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100dvh - 2rem);
+    max-width: 42rem;
+    width: 100%;
+}
+
+.weather-alert-details-header,
+.weather-alert-details-footer {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+}
+
+.weather-alert-details-header {
+    border-bottom: 1px solid var(--bs-border-color);
+}
+
+.weather-alert-details-body {
+    display: grid;
+    gap: 0.75rem;
+    overflow-y: auto;
+    padding: 1rem;
+}
+
+.weather-alert-detail-row {
+    display: grid;
+    gap: 0.1rem;
+}
+
+.weather-alert-detail-label {
+    color: var(--bs-secondary-color);
+    font-size: 0.85rem;
+}
+
+.weather-alert-detail-value {
+    color: var(--bs-body-color);
+}
+
+.weather-hourly-grid,
+.weather-daily-grid {
+    display: grid;
+    gap: 0.1rem;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.weather-daily-grid-compact {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.weather-hourly-item,
+.weather-daily-item,
+.weather-alert {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    height: 100%;
+}
+
+.weather-hourly-item .card-body,
+.weather-daily-item .card-body,
+.weather-alert .card-body,
+.weather-current .card-body {
+    padding: 0.2rem 0;
+}
+
+.weather-icon-sm {
+    font-size: 1.5rem;
+    line-height: 1;
+}
+
+.screensaver-weather {
+    color: var(--screensaver-date-time-color, #d0d0d0);
+    position: fixed;
+    right: clamp(0.75rem, 2vw, 2rem);
+    top: clamp(0.75rem, 2vw, 2rem);
+    text-align: right;
+    z-index: 2001;
+}
+
+.screensaver-weather-header {
+    align-items: center;
+    display: inline-flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+}
+
+.screensaver-weather-icon {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    line-height: 1;
+}
+
+.screensaver-weather-temperature {
+    font-size: clamp(1.75rem, 4vw, 2.75rem);
+    font-weight: 700;
+    line-height: 1;
+}
+
+.screensaver-weather-feels-like,
+.screensaver-weather-alert {
+    font-size: clamp(0.9rem, 2vw, 1.15rem);
+    line-height: 1.1;
+    margin-top: 0.25rem;
+}
+
+.screensaver-weather-alert {
+    color: var(--bs-warning);
+    font-weight: 700;
+}
+
+.weather-loading {
+    min-height: 4rem;
 }

@@ -186,7 +186,11 @@ Click **"OK"** to close the modal.
 ```json
 {
   "FamilyName": "Smith",
-  "Locale": "New York",
+  "Weather": {
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "LocationName": "New York"
+  },
   "GoogleOAuth": {
     "ClientId": "YOUR CLIENT ID",
     "ClientSecret": "ENTER YOURS HERE",

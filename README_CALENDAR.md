@@ -109,7 +109,11 @@ dotnet run --project FamilyDashboard.Api/FamilyDashboard.Api.csproj
 ```json
 {
   "FamilyName": "Smith",
-  "Locale": "New York",
+  "Weather": {
+    "Latitude": 0.0,
+    "Longitude": 0.0,
+    "LocationName": "New York"
+  },
   "GoogleOAuth": {
     "ClientId": "123456789-abcdef.apps.googleusercontent.com",
     "ClientSecret": "GOCSPX-AbCdEf123456",
