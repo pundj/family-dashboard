@@ -38,7 +38,7 @@ public class WeatherService(HttpClient httpClient, IConfiguration configuration,
             _cachedAtUtc = DateTimeOffset.UtcNow;
             return weatherData;
         }
-        catch (Exception ex) when (_cachedWeatherData is not null)
+        catch (Exception ex) when (ex is not OperationCanceledException && _cachedWeatherData is not null)
         {
             logger.LogWarning(ex, "Weather data request failed; returning cached data.");
             return _cachedWeatherData;
