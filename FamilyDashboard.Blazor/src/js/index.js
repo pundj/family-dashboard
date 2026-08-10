@@ -31,7 +31,6 @@ let screensaverWeatherContainer;
 let screensaverWeatherIcon;
 let screensaverWeatherTemperature;
 let screensaverWeatherFeelsLike;
-let screensaverWeatherCondition;
 let screensaverWeatherAlert;
 let screensaverWeatherRefreshIntervalId;
 let screensaverNextEventContainer;
