@@ -13,6 +13,7 @@ module.exports = {
         outputModule: true,
     },
     output: {
+        clean: true,
         filename: 'js/[name].js',
         path: path.resolve(__dirname, dirName),
         library: {
