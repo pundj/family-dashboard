@@ -617,6 +617,27 @@ html[data-bs-theme="dark"] {
     grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
+.weather-forecast-pager {
+    align-items: center;
+    display: grid;
+    gap: 0.35rem;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+}
+
+.weather-forecast-page-button,
+.calendar-page-button {
+    --bs-btn-active-border-color: transparent;
+    --bs-btn-active-color: var(--bs-nav-link-color);
+    --bs-btn-border-color: transparent;
+    --bs-btn-color: var(--bs-nav-link-color);
+    --bs-btn-disabled-border-color: transparent;
+    --bs-btn-hover-border-color: transparent;
+    --bs-btn-hover-color: var(--bs-nav-link-color);
+    font-size: 2rem;
+    line-height: 1;
+    padding: 0.15rem 0.45rem;
+}
+
 .weather-daily-grid-compact {
     grid-template-columns: repeat(5, minmax(0, 1fr));
 }

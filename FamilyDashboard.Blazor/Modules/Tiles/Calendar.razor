@@ -34,9 +34,9 @@
             </div>
             <div class="calendar-controls-row">
                 <div class="calendar-controls">
-                    <button class="btn btn-sm" @onclick="PreviousPeriod">◀</button>
+                    <button class="btn btn-sm calendar-page-button" @onclick="PreviousPeriod" aria-label="Previous calendar period">‹</button>
                     <span class="current-period">@GetPeriodDisplay()</span>
-                    <button class="btn btn-sm" @onclick="NextPeriod">▶</button>
+                    <button class="btn btn-sm calendar-page-button" @onclick="NextPeriod" aria-label="Next calendar period">›</button>
                     <button class="btn btn-sm" @onclick="Today">Today</button>
                 </div>
                 <div class="view-selector me-3">
@@ -892,6 +892,13 @@
 
     .btn:hover {
         background: var(--bs-secondary-bg, #f0f0f0);
+    }
+
+    .calendar-page-button,
+    .calendar-page-button:hover,
+    .calendar-page-button:active,
+    .calendar-page-button:disabled {
+        border: 0;
     }
 
     .btn.active {

@@ -98,26 +98,26 @@
         </div>
 
         <section class="weather-section mb-2" aria-labelledby="hourly-forecast-heading">
-            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+            <div class="mb-1">
                 <h4 id="hourly-forecast-heading" class="mb-0">Hourly Forecast</h4>
-                <div class="btn-group btn-group-sm" role="group" aria-label="Hourly forecast paging">
-                    <button class="btn btn-outline-secondary" @onclick="ShowPreviousHourlyPage" disabled="@(!WeatherForecastPaging.CanGoPrevious(_hourlyStartIndex))">‹ Previous</button>
-                    <button class="btn btn-outline-secondary" @onclick="ShowNextHourlyPage" disabled="@(!WeatherForecastPaging.CanGoNext(_hourlyStartIndex, _weatherData.HourlyForecast.Count))">Next ›</button>
-                </div>
             </div>
-            <div class="weather-hourly-grid">
-                @foreach (var entry in hourlyPage)
-                {
-                    <article class="weather-hourly-item card">
-                        <div class="card-body text-center py-2">
-                            <div class="small text-body-secondary">@GetHourlyTimeLabel(entry.Time)</div>
-                            <div class="weather-icon weather-icon-sm">@entry.Icon</div>
-                            <div class="fw-semibold">@FormatTemperature(entry.Temperature)</div>
-                            <div class="small text-body-secondary">@entry.Condition</div>
-                            <div class="small">@FormatProbability(entry.PrecipitationProbability)</div>
-                        </div>
-                    </article>
-                }
+            <div class="weather-forecast-pager">
+                <button class="btn btn-outline-secondary weather-forecast-page-button" @onclick="ShowPreviousHourlyPage" disabled="@(!WeatherForecastPaging.CanGoPrevious(_hourlyStartIndex))" aria-label="Previous hourly forecast">‹</button>
+                <div class="weather-hourly-grid">
+                    @foreach (var entry in hourlyPage)
+                    {
+                        <article class="weather-hourly-item card">
+                            <div class="card-body text-center py-2">
+                                <div class="small text-body-secondary">@GetHourlyTimeLabel(entry.Time)</div>
+                                <div class="weather-icon weather-icon-sm">@entry.Icon</div>
+                                <div class="fw-semibold">@FormatTemperature(entry.Temperature)</div>
+                                <div class="small text-body-secondary">@entry.Condition</div>
+                                <div class="small">@FormatProbability(entry.PrecipitationProbability)</div>
+                            </div>
+                        </article>
+                    }
+                </div>
+                <button class="btn btn-outline-secondary weather-forecast-page-button" @onclick="ShowNextHourlyPage" disabled="@(!WeatherForecastPaging.CanGoNext(_hourlyStartIndex, _weatherData.HourlyForecast.Count))" aria-label="Next hourly forecast">›</button>
             </div>
         </section>
 
@@ -188,26 +188,26 @@
         }
 
         <section class="weather-section mb-2" aria-labelledby="daily-forecast-heading">
-            <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+            <div class="mb-1">
                 <h4 id="daily-forecast-heading" class="mb-0">Day-to-Day Forecast</h4>
-                <div class="btn-group btn-group-sm" role="group" aria-label="Day-to-day forecast paging">
-                    <button class="btn btn-outline-secondary" @onclick="ShowPreviousDailyPage" disabled="@(!CanGoPreviousDailyPage())">‹ Previous</button>
-                    <button class="btn btn-outline-secondary" @onclick="ShowNextDailyPage" disabled="@(!CanGoNextDailyPage())">Next ›</button>
-                </div>
             </div>
-            <div class="weather-daily-grid weather-daily-grid-compact">
-                @foreach (var day in dailyPage)
-                {
-                    <article class="weather-daily-item card">
-                        <div class="card-body text-center py-2">
-                            <div class="fw-semibold">@day.Date.ToString("ddd M/d")</div>
-                            <div class="weather-icon weather-icon-sm">@day.Icon</div>
-                            <div class="small text-body-secondary">@day.Condition</div>
-                            <div class="fw-semibold">@FormatHighLow(day.HighTemperature, day.LowTemperature)</div>
-                            <div class="small">@FormatProbability(day.PrecipitationProbability)</div>
-                        </div>
-                    </article>
-                }
+            <div class="weather-forecast-pager" role="group" aria-label="Day-to-day forecast paging">
+                <button class="btn btn-outline-secondary weather-forecast-page-button" @onclick="ShowPreviousDailyPage" disabled="@(!CanGoPreviousDailyPage())" aria-label="Previous day-to-day forecast">‹</button>
+                <div class="weather-daily-grid weather-daily-grid-compact">
+                    @foreach (var day in dailyPage)
+                    {
+                        <article class="weather-daily-item card">
+                            <div class="card-body text-center py-2">
+                                <div class="fw-semibold">@day.Date.ToString("ddd M/d")</div>
+                                <div class="weather-icon weather-icon-sm">@day.Icon</div>
+                                <div class="small text-body-secondary">@day.Condition</div>
+                                <div class="fw-semibold">@FormatHighLow(day.HighTemperature, day.LowTemperature)</div>
+                                <div class="small">@FormatProbability(day.PrecipitationProbability)</div>
+                            </div>
+                        </article>
+                    }
+                </div>
+                <button class="btn btn-outline-secondary weather-forecast-page-button" @onclick="ShowNextDailyPage" disabled="@(!CanGoNextDailyPage())" aria-label="Next day-to-day forecast">›</button>
             </div>
         </section>
     }
