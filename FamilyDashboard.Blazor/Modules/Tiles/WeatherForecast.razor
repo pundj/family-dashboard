@@ -101,7 +101,7 @@
             <div class="mb-1">
                 <h4 id="hourly-forecast-heading" class="mb-0">Hourly Forecast</h4>
             </div>
-            <div class="weather-forecast-pager" role="group" aria-label="Hourly forecast paging">
+            <div class="weather-forecast-pager">
                 <button class="btn btn-outline-secondary weather-forecast-page-button" @onclick="ShowPreviousHourlyPage" disabled="@(!WeatherForecastPaging.CanGoPrevious(_hourlyStartIndex))" aria-label="Previous hourly forecast">‹</button>
                 <div class="weather-hourly-grid">
                     @foreach (var entry in hourlyPage)
