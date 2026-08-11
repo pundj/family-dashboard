@@ -19,6 +19,10 @@
     <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
   </ItemGroup>
 
+  <ItemGroup Condition=" '$(Configuration)' == 'Release' ">
+    <Content Remove="wwwroot\appsettings.Development.json" />
+  </ItemGroup>
+
   <Target Name="BuildFrontendAssets" BeforeTargets="ResolveProjectStaticWebAssets">
     <Exec Command="npm run build"
           WorkingDirectory="$(MSBuildProjectDirectory)"
