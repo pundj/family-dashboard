@@ -1,5 +1,6 @@
 using FamilyDashboard.Api.Models.Weather;
 using FamilyDashboard.Api.Services;
+using FamilyDashboard.Blazor.Models.Weather;
 
 namespace FamilyDashboard.Tests;
 
@@ -31,6 +32,31 @@ public class WeatherResponseMapperTests
         Assert.Equal(225, mapped.WindDirection);
         Assert.Equal("Sunny", mapped.Condition);
         Assert.Equal("☀️", mapped.Icon);
+    }
+
+    [Fact]
+    public void MapCurrent_UsesNighttimePresentationAfterSunset()
+    {
+        var current = new OpenMeteoCurrentResponse
+        {
+            Time = "2026-01-01T22:00",
+            WeatherCode = 0
+        };
+        var daily = new[]
+        {
+            new DailyWeatherForecastEntry
+            {
+                Date = new DateOnly(2026, 1, 1),
+                Sunrise = new DateTimeOffset(2026, 1, 1, 7, 0, 0, TimeSpan.Zero),
+                Sunset = new DateTimeOffset(2026, 1, 1, 17, 0, 0, TimeSpan.Zero)
+            }
+        };
+
+        var mapped = WeatherResponseMapper.MapCurrent(current, TimeSpan.Zero, daily);
+
+        Assert.NotNull(mapped);
+        Assert.Equal("Clear", mapped!.Condition);
+        Assert.Equal("🌙", mapped.Icon);
     }
 
     [Fact]

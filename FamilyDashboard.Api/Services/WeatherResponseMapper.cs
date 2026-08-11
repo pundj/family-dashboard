@@ -14,8 +14,8 @@ public static class WeatherResponseMapper
         string? alertsErrorMessage)
     {
         var offset = TimeSpan.FromSeconds(forecast.UtcOffsetSeconds);
-        var current = MapCurrent(forecast.Current);
         var daily = MapDaily(forecast.Daily, offset);
+        var current = MapCurrent(forecast.Current, offset, daily);
         var hourly = MapHourly(forecast.Hourly, offset, daily);
 
         return new WeatherData
@@ -31,20 +31,35 @@ public static class WeatherResponseMapper
         };
     }
 
-    public static CurrentWeatherConditions? MapCurrent(OpenMeteoCurrentResponse? current) => current is null
-        ? null
-        : new CurrentWeatherConditions
+    public static CurrentWeatherConditions? MapCurrent(OpenMeteoCurrentResponse? current) =>
+        MapCurrent(current, TimeSpan.Zero, null);
+
+    public static CurrentWeatherConditions? MapCurrent(
+        OpenMeteoCurrentResponse? current,
+        TimeSpan offset,
+        IReadOnlyList<DailyWeatherForecastEntry>? daily)
+    {
+        if (current is null)
+        {
+            return null;
+        }
+
+        var isNight = TryParseLocationDateTimeOffset(current.Time, offset, out var time) &&
+                      IsNighttime(time, daily);
+
+        return new CurrentWeatherConditions
         {
             Temperature = current.Temperature2M,
             FeelsLikeTemperature = current.ApparentTemperature,
-            Condition = WeatherCodeMapper.GetCondition(current.WeatherCode),
+            Condition = WeatherCodeMapper.GetCondition(current.WeatherCode, isNight),
             WeatherCode = current.WeatherCode,
-            Icon = WeatherCodeMapper.GetIcon(current.WeatherCode),
+            Icon = WeatherCodeMapper.GetIcon(current.WeatherCode, isNight),
             RelativeHumidity = current.RelativeHumidity2M,
             Precipitation = current.Precipitation,
             WindSpeed = current.WindSpeed10M,
             WindDirection = current.WindDirection10M
         };
+    }
 
     public static IReadOnlyList<HourlyWeatherForecastEntry> MapHourly(OpenMeteoHourlyResponse? hourly, TimeSpan offset, IReadOnlyList<DailyWeatherForecastEntry>? daily = null)
     {
