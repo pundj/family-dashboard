@@ -289,13 +289,10 @@ function Apply-IpAccessRestrictions {
 }
 
 try {
-  # 1) Update client appsettings before publish
-  Update-BlazorAppSettings
-
-  # 2) Azure context/subscription
+  # 1) Azure context/subscription
   Ensure-AzContext -SubscriptionId $SubscriptionId -TenantId $TenantId
 
-  # 3) Infra
+  # 2) Infra
   az group create --name $ResourceGroup --location $Location
   if ($LASTEXITCODE -ne 0) { throw "Failed to create or validate resource group '$ResourceGroup'." }
 
@@ -325,11 +322,18 @@ try {
     --resource-group $ResourceGroup
   if ($LASTEXITCODE -ne 0) { throw "Web app '$WebAppName' was not found after creation." }
 
-  # 4) Build/publish API (hosted Blazor app entrypoint)
+  # 3) Build/publish API (hosted Blazor app entrypoint)
+  dotnet clean .\FamilyDashboard.Api\FamilyDashboard.Api.csproj -c Release
+  if ($LASTEXITCODE -ne 0) { throw "dotnet clean failed." }
+
   dotnet publish .\FamilyDashboard.Api\FamilyDashboard.Api.csproj -c Release -o .\artifacts\publish
   if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
 
-  # 5) Zip deploy
+  # Inject deployment settings after publishing so source assets remain unchanged during static-asset generation.
+  $script:BlazorAppSettingsPath = Join-Path $PSScriptRoot "artifacts\publish\wwwroot\appsettings.json"
+  Update-BlazorAppSettings
+
+  # 4) Zip deploy
   if (Test-Path .\artifacts\publish.zip) { Remove-Item .\artifacts\publish.zip -Force }
   Compress-Archive -Path .\artifacts\publish\* -DestinationPath .\artifacts\publish.zip -Force
   az webapp deploy `
@@ -339,14 +343,14 @@ try {
     --type zip
   if ($LASTEXITCODE -ne 0) { throw "Web app deployment failed for '$WebAppName'." }
 
-  # 6) Ensure Linux startup command points to the deployed API assembly
+  # 5) Ensure Linux startup command points to the deployed API assembly
   az webapp config set `
     --resource-group $ResourceGroup `
     --name $WebAppName `
     --startup-file "dotnet FamilyDashboard.Api.dll"
   if ($LASTEXITCODE -ne 0) { throw "Failed to set startup command for '$WebAppName'." }
 
-  # 7) API app settings from script parameters
+  # 6) API app settings from script parameters
   $apiSettings = @(
     "ASPNETCORE_ENVIRONMENT=$AspNetCoreEnvironment",
     "ConnectionStrings__DefaultConnection=$ApiConnectionString",
@@ -370,7 +374,7 @@ try {
     --setting-names WEBSITE_RUN_FROM_PACKAGE
   if ($LASTEXITCODE -ne 0) { throw "Failed to remove WEBSITE_RUN_FROM_PACKAGE setting for '$WebAppName'." }
 
-  # 8) Optional: lock down app access by IP allow-list
+  # 7) Optional: lock down app access by IP allow-list
   Apply-IpAccessRestrictions `
     -ResourceGroup $ResourceGroup `
     -WebAppName $WebAppName `
