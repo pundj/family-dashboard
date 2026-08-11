@@ -1,6 +1,5 @@
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const dirName = 'wwwroot/dist';
 
 module.exports = {
@@ -8,13 +7,13 @@ module.exports = {
         index: './src/js/index'
     },
     plugins: [
-        new CleanWebpackPlugin(),
         new MiniCssExtractPlugin({ filename: 'css/site.css' }),
     ],
     experiments: {
         outputModule: true,
     },
     output: {
+        clean: true,
         filename: 'js/[name].js',
         path: path.resolve(__dirname, dirName),
         library: {
