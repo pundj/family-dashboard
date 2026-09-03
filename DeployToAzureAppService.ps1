@@ -14,6 +14,8 @@ param(
   [string]$Sku = "B1",
   [string]$AspNetCoreEnvironment = "Production",
   [string]$Runtime = "DOTNETCORE|10.0",
+  [bool]$RestartWebAppAfterDeploy = $true,
+  [bool]$EnableDeployStamp = $true,
 
   # API appsettings
   [string]$ApiConnectionString = "Data Source=App_Data/familydashboard.db",
@@ -26,7 +28,6 @@ param(
   [double]$WeatherLatitude,
   [double]$WeatherLongitude,
   [string]$WeatherLocationName,
-  [string]$CameraViewerUrl,
   [string]$GoogleClientId,
   [string]$GoogleClientSecret,
   [string]$GoogleRedirectUri,
@@ -42,9 +43,15 @@ foreach ($kvp in $PSBoundParameters.GetEnumerator()) {
 }
 
 $script:BlazorAppSettingsPath = Join-Path $PSScriptRoot "FamilyDashboard.Blazor\wwwroot\appsettings.json"
+$script:ApiProjectPath = Join-Path $PSScriptRoot "FamilyDashboard.Api\FamilyDashboard.Api.csproj"
+$script:ArtifactsDirectory = Join-Path $PSScriptRoot "artifacts"
+$script:PublishDirectory = Join-Path $script:ArtifactsDirectory "publish"
+$script:PublishZipPath = Join-Path $script:ArtifactsDirectory "publish.zip"
 $script:OriginalBlazorAppSettingsContent = $null
 $script:OriginalBlazorAppSettingsBytes = $null
 $script:RestoreBlazorAppSettings = $false
+$script:RestartTriggered = $false
+$script:DeployStamp = [DateTimeOffset]::UtcNow.ToString("yyyyMMddHHmmss")
 
 function Resolve-AppServiceRuntime {
   param(
@@ -132,25 +139,19 @@ function Update-BlazorAppSettings {
     $settings["Weather"] = @{}
   }
 
+  if ($EnableDeployStamp) {
+    if (-not $settings.ContainsKey("Deployment") -or $null -eq $settings["Deployment"]) {
+      $settings["Deployment"] = @{}
+    }
+
+    $settings["Deployment"]["Stamp"] = $script:DeployStamp
+    Write-Host "Deploy stamp: $($script:DeployStamp)"
+  }
+
   if ($script:InputParameters.ContainsKey("FamilyName")) { $settings["FamilyName"] = $FamilyName }
   if ($script:InputParameters.ContainsKey("WeatherLatitude")) { $settings["Weather"]["Latitude"] = $WeatherLatitude }
   if ($script:InputParameters.ContainsKey("WeatherLongitude")) { $settings["Weather"]["Longitude"] = $WeatherLongitude }
   if ($script:InputParameters.ContainsKey("WeatherLocationName")) { $settings["Weather"]["LocationName"] = $WeatherLocationName }
- if ($script:InputParameters.ContainsKey("CameraViewerUrl")) {
-  if ([string]::IsNullOrWhiteSpace($CameraViewerUrl)) {
-    $settings["CameraViewerUrl"] = $null
-  }
-  else {
-    $trimmedCameraViewerUrl = $CameraViewerUrl.Trim()
-    $cameraViewerUri = $null
-    if (-not [Uri]::TryCreate($trimmedCameraViewerUrl, [UriKind]::Absolute, [ref]$cameraViewerUri) -or
-        $cameraViewerUri.Scheme -notin @([Uri]::UriSchemeHttp, [Uri]::UriSchemeHttps)) {
-      throw "CameraViewerUrl must be an absolute http/https URL (e.g. https://my.wyze.com/home)."
-    }
-
-    $settings["CameraViewerUrl"] = $cameraViewerUri.ToString()
-  }
-}
   if ($script:InputParameters.ContainsKey("GoogleClientId")) { $settings["GoogleOAuth"]["ClientId"] = $GoogleClientId }
   if ($script:InputParameters.ContainsKey("GoogleClientSecret")) { $settings["GoogleOAuth"]["ClientSecret"] = $GoogleClientSecret }
   if ($script:InputParameters.ContainsKey("GoogleRedirectUri")) { $settings["GoogleOAuth"]["RedirectUri"] = $GoogleRedirectUri }
@@ -166,6 +167,42 @@ function Update-BlazorAppSettings {
   $settings | ConvertTo-Json -Depth 12 | Set-Content -Path $script:BlazorAppSettingsPath -Encoding UTF8
 }
 
+function Assert-DeployPackageIncludesStamp {
+  if (-not $EnableDeployStamp) {
+    return
+  }
+
+  if (-not (Test-Path $script:PublishZipPath)) {
+    throw "Deployment package not found at '$script:PublishZipPath'."
+  }
+
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $zip = [System.IO.Compression.ZipFile]::OpenRead($script:PublishZipPath)
+  try {
+    $entry = $zip.Entries | Where-Object { $_.FullName -eq 'wwwroot/appsettings.json' } | Select-Object -First 1
+    if ($null -eq $entry) {
+      throw "Package '$script:PublishZipPath' does not contain wwwroot/appsettings.json."
+    }
+
+    $reader = New-Object System.IO.StreamReader($entry.Open())
+    try {
+      $json = $reader.ReadToEnd()
+    }
+    finally {
+      $reader.Dispose()
+    }
+
+    if ($json -notmatch [Regex]::Escape($script:DeployStamp)) {
+      throw "Package '$script:PublishZipPath' does not contain expected deploy stamp '$($script:DeployStamp)'."
+    }
+
+    Write-Host "Verified deploy stamp in package: $($script:DeployStamp)"
+  }
+  finally {
+    $zip.Dispose()
+  }
+}
+
 function Restore-BlazorAppSettingsIfNeeded {
   if ($script:RestoreBlazorAppSettings) {
     if ($null -ne $script:OriginalBlazorAppSettingsBytes) {
@@ -178,6 +215,16 @@ function Restore-BlazorAppSettingsIfNeeded {
     $script:RestoreBlazorAppSettings = $false
     $script:OriginalBlazorAppSettingsContent = $null
     $script:OriginalBlazorAppSettingsBytes = $null
+  }
+
+  if ($RestartWebAppAfterDeploy -and -not $script:RestartTriggered) {
+    Write-Host "Restarting web app '$WebAppName'..."
+    az webapp restart --resource-group $ResourceGroup --name $WebAppName | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+      throw "Failed to restart web app '$WebAppName'."
+    }
+
+    $script:RestartTriggered = $true
   }
 }
 
@@ -326,16 +373,33 @@ try {
   if ($LASTEXITCODE -ne 0) { throw "Web app '$WebAppName' was not found after creation." }
 
   # 4) Build/publish API (hosted Blazor app entrypoint)
-  dotnet publish .\FamilyDashboard.Api\FamilyDashboard.Api.csproj -c Release -o .\artifacts\publish
+  if (-not (Test-Path $script:ApiProjectPath)) {
+    throw "API project was not found at '$script:ApiProjectPath'."
+  }
+
+  if (Test-Path $script:PublishDirectory) {
+    Remove-Item $script:PublishDirectory -Recurse -Force
+  }
+
+  dotnet publish $script:ApiProjectPath -c Release -o $script:PublishDirectory
   if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
 
   # 5) Zip deploy
-  if (Test-Path .\artifacts\publish.zip) { Remove-Item .\artifacts\publish.zip -Force }
-  Compress-Archive -Path .\artifacts\publish\* -DestinationPath .\artifacts\publish.zip -Force
+  if (-not (Test-Path $script:ArtifactsDirectory)) {
+    New-Item -Path $script:ArtifactsDirectory -ItemType Directory | Out-Null
+  }
+
+  if (Test-Path $script:PublishZipPath) {
+    Remove-Item $script:PublishZipPath -Force
+  }
+
+  Compress-Archive -Path (Join-Path $script:PublishDirectory '*') -DestinationPath $script:PublishZipPath -Force
+  Assert-DeployPackageIncludesStamp
+
   az webapp deploy `
     --resource-group $ResourceGroup `
     --name $WebAppName `
-    --src-path .\artifacts\publish.zip `
+    --src-path $script:PublishZipPath `
     --type zip
   if ($LASTEXITCODE -ne 0) { throw "Web app deployment failed for '$WebAppName'." }
 

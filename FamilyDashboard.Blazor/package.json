@@ -3,8 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "webpack --progress --profile --mode development",
-    "production": "webpack --progress --profile --mode production",
+    "build": "webpack --progress --profile --mode development && node -e \"const fs=require('fs');const p='wwwroot/dist/js/index.js.LICENSE.txt';if(!fs.existsSync(p))fs.writeFileSync(p,'');\"",
+    "production": "webpack --progress --profile --mode production && node -e \"const fs=require('fs');const p='wwwroot/dist/js/index.js.LICENSE.txt';if(!fs.existsSync(p))fs.writeFileSync(p,'');\"",
     "watch": "webpack watch --progress --mode development"
   },
   "dependencies": {

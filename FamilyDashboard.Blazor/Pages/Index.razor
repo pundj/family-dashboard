@@ -1,4 +1,4 @@
-﻿@page "/"
+@page "/"
 @inject IConfiguration Configuration
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JsRuntime
@@ -46,16 +46,6 @@
                     <span class="dashboard-tab-label">Calendar</span>
                 </button>
             }
-            @if (_showCamerasTab)
-            {
-                <button class="nav-link dashboard-tab-link"
-                        @onclick="OpenCamerasPopupAsync"
-                        aria-label="Cameras"
-                        title="Cameras">
-                    <i class="fa-solid fa-camera" aria-hidden="true"></i>
-                    <span class="dashboard-tab-label">Cameras</span>
-                </button>
-            }
         </div>
         <button class="nav-link dashboard-settings-button mt-2"
                 @onclick="DashboardSettingsState.RequestOpen"
@@ -65,6 +55,7 @@
             <span class="dashboard-tab-label">Settings</span>
         </button>
     </div>
+
     <div class="dashboard-tab-content tab-content flex-grow-1">
         @if (_showSmartThingsTab)
         {
@@ -89,38 +80,31 @@
             <div class="tab-pane fade @(_activeTab == "calendar" ? "show active" : "")">
                 @if (_activeTab == "calendar")
                 {
-                    <Calendar/>
+                    <Calendar />
                 }
             </div>
         }
-            </div>
-        </div>
-
+    </div>
+</div>
 
 @code {
-    bool _showSmartThingsTab;
-    bool _showWeatherTab;
-    bool _showCalendarTab;
-    bool _showCamerasTab;
-    bool _showTabs = true;
-    string _cameraViewerUrl = string.Empty;
-    string _activeTab = "";
+    private bool _showSmartThingsTab;
+    private bool _showWeatherTab;
+    private bool _showCalendarTab;
+    private bool _showTabs = true;
+    private string _activeTab = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
         _showSmartThingsTab = true;
         _showWeatherTab = HasWeatherConfiguration();
-        _showCalendarTab = Configuration != null && 
-            (Configuration.GetValue<string>("GoogleOAuth:ClientId") != null || 
+        _showCalendarTab = Configuration != null &&
+            (Configuration.GetValue<string>("GoogleOAuth:ClientId") != null ||
              Configuration.GetValue<string>("GoogleCalendarEmbedCode") != null);
-        _cameraViewerUrl = GetCameraViewerUrl();
-        _showCamerasTab = !string.IsNullOrEmpty(_cameraViewerUrl);
 
-        // Load active tab from URL or localStorage
         await LoadActiveTabAsync();
-        
         NavigationManager.LocationChanged += OnLocationChanged;
-        
+
         await base.OnInitializedAsync();
     }
 
@@ -129,7 +113,7 @@
         var uri = new Uri(e.Location);
         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
         var tabFromUrl = query["tab"];
-        
+
         if (!string.IsNullOrEmpty(tabFromUrl))
         {
             _activeTab = IsTabAvailable(tabFromUrl) ? tabFromUrl : GetDefaultTab();
@@ -139,29 +123,20 @@
 
     private async Task LoadActiveTabAsync()
     {
-        // Check URL first
         var uri = new Uri(NavigationManager.Uri);
         var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
         var tabFromUrl = query["tab"];
-        
+
         if (!string.IsNullOrEmpty(tabFromUrl))
         {
             _activeTab = tabFromUrl;
         }
         else
         {
-            // Load from localStorage
             try
             {
                 var storedTab = await JsRuntime.InvokeAsync<string>("localStorage.getItem", "active_tab");
-                if (!string.IsNullOrEmpty(storedTab))
-                {
-                    _activeTab = storedTab;
-                }
-                else
-                {
-                    _activeTab = GetDefaultTab();
-                }
+                _activeTab = !string.IsNullOrEmpty(storedTab) ? storedTab : GetDefaultTab();
             }
             catch
             {
@@ -177,28 +152,51 @@
 
     private async Task ChangeTab(string tab)
     {
-        if (tab == "cameras")
+        if (!IsTabAvailable(tab))
         {
-            await OpenCamerasPopupAsync();
             return;
         }
 
         _activeTab = tab;
-
-        // Update URL
         NavigationManager.NavigateTo($"/?tab={tab}", false);
 
-        // Save to localStorage
         try
         {
             await JsRuntime.InvokeVoidAsync("localStorage.setItem", "active_tab", tab);
         }
-        catch (Exception ex)
+        catch
         {
-            Console.WriteLine($"Error saving active tab: {ex.Message}");
         }
 
         StateHasChanged();
+    }
+
+    private bool IsTabAvailable(string tab) => tab switch
+    {
+        "smart-home" => _showSmartThingsTab,
+        "weather" => _showWeatherTab,
+        "calendar" => _showCalendarTab,
+        _ => false
+    };
+
+    private string GetDefaultTab()
+    {
+        if (_showSmartThingsTab)
+        {
+            return "smart-home";
+        }
+
+        if (_showWeatherTab)
+        {
+            return "weather";
+        }
+
+        if (_showCalendarTab)
+        {
+            return "calendar";
+        }
+
+        return string.Empty;
     }
 
     private void ToggleTabs()
@@ -206,69 +204,13 @@
         _showTabs = !_showTabs;
     }
 
-    private async Task OpenCamerasPopupAsync()
-    {
-        try
-        {
-            await JsRuntime.InvokeVoidAsync("open", _cameraViewerUrl, "familyDashboardCameras", "popup=yes,width=1400,height=900,noopener,noreferrer");
-        }
-        catch
-        {
-            // Ignore popup errors. Browser-level popup controls determine behavior.
-        }
-    }
-
-    private string GetDefaultTab()
-    {
-        return _showSmartThingsTab ? "smart-home" :
-               _showWeatherTab ? "weather" :
-               _showCalendarTab ? "calendar" : "";
-    }
-
-    private bool IsTabAvailable(string tab)
-    {
-        return tab switch
-        {
-            "smart-home" => _showSmartThingsTab,
-            "weather" => _showWeatherTab,
-            "calendar" => _showCalendarTab,
-            _ => false
-        };
-    }
-
-    private string GetCameraViewerUrl()
-    {
-        var configuredValue = Configuration?.GetValue<string>("CameraViewerUrl");
-        if (string.IsNullOrWhiteSpace(configuredValue))
-        {
-            return string.Empty;
-        }
-
-        var trimmedValue = configuredValue.Trim();
-        if (Uri.TryCreate(trimmedValue, UriKind.Absolute, out var cameraUri) &&
-            (cameraUri.Scheme == Uri.UriSchemeHttp || cameraUri.Scheme == Uri.UriSchemeHttps))
-        {
-            return cameraUri.ToString();
-        }
-
-        return string.Empty;
-    }
-
-    private bool HasWeatherConfiguration()
-    {
-        var weatherSection = Configuration?.GetSection("Weather");
-        if (weatherSection is null)
-        {
-            return false;
-        }
-
-        var latitude = weatherSection.GetValue<double?>("Latitude");
-        var longitude = weatherSection.GetValue<double?>("Longitude");
-        return latitude is not null && longitude is not null;
-    }
+    private bool HasWeatherConfiguration() =>
+        Configuration.GetValue<double?>("Weather:Latitude") is not null &&
+        Configuration.GetValue<double?>("Weather:Longitude") is not null;
 
     public void Dispose()
     {
         NavigationManager.LocationChanged -= OnLocationChanged;
+        GC.SuppressFinalize(this);
     }
 }
