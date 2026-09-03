@@ -11,6 +11,7 @@ public sealed class WeatherProxyService(
     ILogger<WeatherProxyService> logger)
     : IWeatherProxyService
 {
+    private const string OpenMeteoForecastModel = "ncep_hgefs025_ensemble_mean";
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
 
@@ -51,8 +52,7 @@ public sealed class WeatherProxyService(
     private async Task<OpenMeteoForecastResponse> GetOpenMeteoForecastAsync(double latitude, double longitude, CancellationToken cancellationToken)
     {
         var client = CreateOpenMeteoClient();
-        var requestUri = string.Create(CultureInfo.InvariantCulture,
-            $"forecast?latitude={latitude}&longitude={longitude}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&forecast_days=10&forecast_hours=48&timezone=auto");
+        var requestUri = BuildForecastRequestUri(latitude, longitude);
 
         var response = await client.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
@@ -87,6 +87,10 @@ public sealed class WeatherProxyService(
             return ([], false, "Weather alerts are temporarily unavailable.");
         }
     }
+
+    private static string BuildForecastRequestUri(double latitude, double longitude) =>
+        string.Create(CultureInfo.InvariantCulture,
+            $"forecast?latitude={latitude}&longitude={longitude}&models={OpenMeteoForecastModel}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&forecast_days=10&forecast_hours=48&timezone=auto");
 
     private HttpClient CreateOpenMeteoClient()
     {
