@@ -11,7 +11,10 @@ public sealed class WeatherProxyService(
     ILogger<WeatherProxyService> logger)
     : IWeatherProxyService
 {
-    private const string OpenMeteoForecastModel = "ncep_hgefs025_ensemble_mean";
+    private const string OpenMeteoDailyModel = "ncep_hgefs025_ensemble_mean";
+    private const string OpenMeteoCurrentFields = "temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m";
+    private const string OpenMeteoHourlyFields = "temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code";
+    private const string OpenMeteoDailyFields = "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset";
     private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
     private readonly SemaphoreSlim _cacheLock = new(1, 1);
 
@@ -31,7 +34,16 @@ public sealed class WeatherProxyService(
                 return cachedWeather;
             }
 
-            var forecast = await GetOpenMeteoForecastAsync(latitude, longitude, cancellationToken).ConfigureAwait(false);
+            var dailyForecastTask = GetOpenMeteoForecastAsync(
+                BuildForecastRequestUri(latitude, longitude, OpenMeteoDailyModel, includeCurrent: false, includeHourly: false, includeDaily: true),
+                cancellationToken);
+
+            var currentHourlyForecastTask = GetOpenMeteoForecastAsync(
+                BuildForecastRequestUri(latitude, longitude, model: null, includeCurrent: true, includeHourly: true, includeDaily: false),
+                cancellationToken);
+
+            await Task.WhenAll(dailyForecastTask, currentHourlyForecastTask).ConfigureAwait(false);
+            var forecast = MergeForecasts(dailyForecastTask.Result, currentHourlyForecastTask.Result);
             var (alerts, alertsAvailable, alertsErrorMessage) = await GetNwsAlertsAsync(latitude, longitude, cancellationToken).ConfigureAwait(false);
             var weatherData = WeatherResponseMapper.Map(forecast, locationName, alerts, alertsAvailable, alertsErrorMessage);
 
@@ -40,7 +52,7 @@ public sealed class WeatherProxyService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException && memoryCache.TryGetValue(cacheKey, out cachedWeather) && cachedWeather is not null)
         {
-            logger.LogWarning(ex, "Weather proxy request failed for {Latitude}, {Longitude}; returning cached data.", latitude, longitude);
+            logger.LogWarning(ex, "Weather proxy request failed; returning cached data.");
             return cachedWeather;
         }
         finally
@@ -49,10 +61,9 @@ public sealed class WeatherProxyService(
         }
     }
 
-    private async Task<OpenMeteoForecastResponse> GetOpenMeteoForecastAsync(double latitude, double longitude, CancellationToken cancellationToken)
+    private async Task<OpenMeteoForecastResponse> GetOpenMeteoForecastAsync(string requestUri, CancellationToken cancellationToken)
     {
         var client = CreateOpenMeteoClient();
-        var requestUri = BuildForecastRequestUri(latitude, longitude);
 
         var response = await client.GetAsync(requestUri, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
@@ -88,9 +99,26 @@ public sealed class WeatherProxyService(
         }
     }
 
-    private static string BuildForecastRequestUri(double latitude, double longitude) =>
-        string.Create(CultureInfo.InvariantCulture,
-            $"forecast?latitude={latitude}&longitude={longitude}&models={OpenMeteoForecastModel}&current=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,apparent_temperature,precipitation_probability,precipitation,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&forecast_days=10&forecast_hours=48&timezone=auto");
+    private static string BuildForecastRequestUri(double latitude, double longitude, string? model, bool includeCurrent, bool includeHourly, bool includeDaily)
+    {
+        var modelSegment = string.IsNullOrWhiteSpace(model) ? string.Empty : $"&models={model}";
+        var currentSegment = includeCurrent ? $"&current={OpenMeteoCurrentFields}" : string.Empty;
+        var hourlySegment = includeHourly ? $"&hourly={OpenMeteoHourlyFields}" : string.Empty;
+        var dailySegment = includeDaily ? $"&daily={OpenMeteoDailyFields}" : string.Empty;
+
+        return string.Create(
+            CultureInfo.InvariantCulture,
+            $"forecast?latitude={latitude}&longitude={longitude}{modelSegment}{currentSegment}{hourlySegment}{dailySegment}&temperature_unit=fahrenheit&windspeed_unit=mph&precipitation_unit=inch&forecast_days=10&forecast_hours=48&timezone=auto");
+    }
+
+    private static OpenMeteoForecastResponse MergeForecasts(OpenMeteoForecastResponse dailyForecast, OpenMeteoForecastResponse currentHourlyForecast) =>
+        new()
+        {
+            UtcOffsetSeconds = currentHourlyForecast.UtcOffsetSeconds != 0 ? currentHourlyForecast.UtcOffsetSeconds : dailyForecast.UtcOffsetSeconds,
+            Current = currentHourlyForecast.Current ?? dailyForecast.Current,
+            Hourly = currentHourlyForecast.Hourly ?? dailyForecast.Hourly,
+            Daily = dailyForecast.Daily ?? currentHourlyForecast.Daily
+        };
 
     private HttpClient CreateOpenMeteoClient()
     {

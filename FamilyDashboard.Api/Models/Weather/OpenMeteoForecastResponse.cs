@@ -50,19 +50,19 @@ public sealed class OpenMeteoHourlyResponse
     public string[]? Time { get; set; }
 
     [JsonPropertyName("temperature_2m")]
-    public double[]? Temperature2M { get; set; }
+    public double?[]? Temperature2M { get; set; }
 
     [JsonPropertyName("apparent_temperature")]
-    public double[]? ApparentTemperature { get; set; }
+    public double?[]? ApparentTemperature { get; set; }
 
     [JsonPropertyName("precipitation_probability")]
-    public double[]? PrecipitationProbability { get; set; }
+    public double?[]? PrecipitationProbability { get; set; }
 
     [JsonPropertyName("precipitation")]
-    public double[]? Precipitation { get; set; }
+    public double?[]? Precipitation { get; set; }
 
     [JsonPropertyName("weather_code")]
-    public int[]? WeatherCode { get; set; }
+    public int?[]? WeatherCode { get; set; }
 }
 
 public sealed class OpenMeteoDailyResponse
@@ -77,14 +77,14 @@ public sealed class OpenMeteoDailyResponse
     public string[]? Sunset { get; set; }
 
     [JsonPropertyName("temperature_2m_max")]
-    public double[]? Temperature2MMax { get; set; }
+    public double?[]? Temperature2MMax { get; set; }
 
     [JsonPropertyName("temperature_2m_min")]
-    public double[]? Temperature2MMin { get; set; }
+    public double?[]? Temperature2MMin { get; set; }
 
     [JsonPropertyName("weather_code")]
-    public int[]? WeatherCode { get; set; }
+    public int?[]? WeatherCode { get; set; }
 
     [JsonPropertyName("precipitation_probability_max")]
-    public double[]? PrecipitationProbabilityMax { get; set; }
+    public double?[]? PrecipitationProbabilityMax { get; set; }
 }

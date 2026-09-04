@@ -12,7 +12,7 @@ public class WeatherProxyServiceTests
 
         Assert.NotNull(method);
 
-        var requestUri = method!.Invoke(null, [39.742, -84.388]) as string
+        var requestUri = method!.Invoke(null, [39.742, -84.388, "ncep_hgefs025_ensemble_mean", false, false, true]) as string
             ?? throw new InvalidOperationException("Expected the weather forecast URI builder to return a request string.");
 
         Assert.True(requestUri.Contains("latitude=39.742", StringComparison.Ordinal));
