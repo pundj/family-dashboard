@@ -52,7 +52,7 @@ public sealed class WeatherProxyService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException && memoryCache.TryGetValue(cacheKey, out cachedWeather) && cachedWeather is not null)
         {
-            logger.LogWarning(ex, "Weather proxy request failed for {Latitude}, {Longitude}; returning cached data.", latitude, longitude);
+            logger.LogWarning(ex, "Weather proxy request failed; returning cached data.");
             return cachedWeather;
         }
         finally
