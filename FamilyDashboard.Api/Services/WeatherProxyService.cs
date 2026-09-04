@@ -34,15 +34,16 @@ public sealed class WeatherProxyService(
                 return cachedWeather;
             }
 
-            var dailyForecast = await GetOpenMeteoForecastAsync(
+            var dailyForecastTask = GetOpenMeteoForecastAsync(
                 BuildForecastRequestUri(latitude, longitude, OpenMeteoDailyModel, includeCurrent: false, includeHourly: false, includeDaily: true),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken);
 
-            var currentHourlyForecast = await GetOpenMeteoForecastAsync(
+            var currentHourlyForecastTask = GetOpenMeteoForecastAsync(
                 BuildForecastRequestUri(latitude, longitude, model: null, includeCurrent: true, includeHourly: true, includeDaily: false),
-                cancellationToken).ConfigureAwait(false);
+                cancellationToken);
 
-            var forecast = MergeForecasts(dailyForecast, currentHourlyForecast);
+            await Task.WhenAll(dailyForecastTask, currentHourlyForecastTask).ConfigureAwait(false);
+            var forecast = MergeForecasts(dailyForecastTask.Result, currentHourlyForecastTask.Result);
             var (alerts, alertsAvailable, alertsErrorMessage) = await GetNwsAlertsAsync(latitude, longitude, cancellationToken).ConfigureAwait(false);
             var weatherData = WeatherResponseMapper.Map(forecast, locationName, alerts, alertsAvailable, alertsErrorMessage);
 

@@ -51,6 +51,7 @@ $script:OriginalBlazorAppSettingsContent = $null
 $script:OriginalBlazorAppSettingsBytes = $null
 $script:RestoreBlazorAppSettings = $false
 $script:RestartTriggered = $false
+$script:DeploymentSucceeded = $false
 $script:DeployStamp = [DateTimeOffset]::UtcNow.ToString("yyyyMMddHHmmss")
 
 function Resolve-AppServiceRuntime {
@@ -217,7 +218,7 @@ function Restore-BlazorAppSettingsIfNeeded {
     $script:OriginalBlazorAppSettingsBytes = $null
   }
 
-  if ($RestartWebAppAfterDeploy -and -not $script:RestartTriggered) {
+  if ($script:DeploymentSucceeded -and $RestartWebAppAfterDeploy -and -not $script:RestartTriggered) {
     Write-Host "Restarting web app '$WebAppName'..."
     az webapp restart --resource-group $ResourceGroup --name $WebAppName | Out-Null
     if ($LASTEXITCODE -ne 0) {
@@ -402,6 +403,7 @@ try {
     --src-path $script:PublishZipPath `
     --type zip
   if ($LASTEXITCODE -ne 0) { throw "Web app deployment failed for '$WebAppName'." }
+  $script:DeploymentSucceeded = $true
 
   # 6) Ensure Linux startup command points to the deployed API assembly
   az webapp config set `

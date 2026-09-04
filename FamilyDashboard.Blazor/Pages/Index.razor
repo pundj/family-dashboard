@@ -205,6 +205,7 @@
     }
 
     private bool HasWeatherConfiguration() =>
+        Configuration is not null &&
         Configuration.GetValue<double?>("Weather:Latitude") is not null &&
         Configuration.GetValue<double?>("Weather:Longitude") is not null;
 

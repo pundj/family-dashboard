@@ -80,7 +80,6 @@ The app will be available at http://localhost:7104 and persists API data in `Fam
 - **Smart Home Integration** - Per-user SmartThings token storage with server-side proxying
 - **Weather Forecast** - Native weather data display using Open-Meteo and NWS alerts (configurable)
 - **Calendar** - Google Calendar OAuth integration with Day/Week/Month views (configurable)
-- **Cameras** - Optional Cameras tab that launches a configured camera viewer URL in a popup window
 - **Random Quote/Joke** - Entertainment tiles with auto-refresh
 - **Auto-refresh** - Tiles automatically update at configured intervals
 - **Inactivity Screen Timeout** - A configurable screen-darkening timeout that wakes when the screen is touched
@@ -93,10 +92,8 @@ The application uses configuration files for non-secret settings and server-side
 - **Weather**: Configure `Weather:Latitude`, `Weather:Longitude`, and optional `Weather:LocationName` in `FamilyDashboard.Blazor/wwwroot/appsettings.json`
 - **Weather**: See [README_WEATHER.md](README_WEATHER.md) for setup and usage details.
 - **Calendar**: Configure `GoogleOAuth` for private calendar access (or use `GoogleCalendarEmbedCode` for legacy embedded calendar mode).
-- **Cameras**: Set `CameraViewerUrl` as a **top-level** key in `FamilyDashboard.Blazor/wwwroot/appsettings*.json` using an absolute `http`/`https` URL. The Cameras tab opens this URL in a popup window.
 - **Screen timeout and screensaver display**: Select the gear button in the dashboard header to configure **Screen timeout (minutes)** plus the screensaver's date/time display options. The timeout defaults to five minutes, accepts values from 1 to 1,440 minutes, and all dashboard display preferences are stored in that browser's local storage. When the timeout expires, touch or click the dark screen to resume the dashboard.
 
-For camera-specific setup and troubleshooting, see [README_CAMERAS.md](README_CAMERAS.md).
 For weather-specific setup and troubleshooting, see [README_WEATHER.md](README_WEATHER.md).
 
 ## Project Structure
